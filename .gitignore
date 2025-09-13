@@ -53,3 +53,22 @@ Thumbs.db
 **/*.tmp
 **/*.temp
 **/.temp/
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/*.tfplan
+**/*.tfvars
+!**/*.tfvars.example
+**/crash.log
+**/crash.*.log
+**/.terraformrc
+**/terraform.rc
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+
+CLAUDE.md
