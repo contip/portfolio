@@ -12,6 +12,9 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
     - name: Checkout code
@@ -46,8 +49,7 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Package Lambda function
@@ -90,6 +92,11 @@ jobs:
       with:
         terraform_version: "1.6.0"
 
+    - name: Create terraform.tfvars file
+      working-directory: ./src/infra/environments/dev
+      run: |
+        echo "${{ secrets.TFVARS_CONTENT_DEV }}" > terraform.tfvars
+
     - name: Terraform Init
       working-directory: ./src/infra/environments/dev
       run: terraform init
@@ -100,6 +107,7 @@ jobs:
         terraform plan \
           -var="lambda_s3_key=${{ env.LAMBDA_S3_KEY }}" \
           -var="lambda_source_code_hash=${{ env.LAMBDA_HASH }}" \
+          -var-file=terraform.tfvars \
           -out=tfplan
 
         echo "📋 Terraform will update Lambda with new code from: ${{ env.LAMBDA_S3_KEY }}"
@@ -107,7 +115,7 @@ jobs:
     - name: Terraform Apply
       working-directory: ./src/infra/environments/dev
       run: |
-        terraform apply tfplan
+        terraform apply -auto-approve tfplan
         echo "✅ Terraform apply completed - Lambda updated through IaC!"
 
     - name: Test API endpoint
