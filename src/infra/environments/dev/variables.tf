@@ -45,3 +45,8 @@ variable "lambda_source_code_hash" {
   type        = string
   default     = ""
 }
+
+variable "github_actions_role_arn" {
+  description = "ARN of the GitHub Actions IAM role for deployment access"
+  type        = string
+}

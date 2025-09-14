@@ -87,6 +87,36 @@ module "s3_deployments" {
   enable_versioning   = true  # Keep deployment history
   block_public_access = true  # Private bucket
 
+  # Bucket policy to allow GitHub Actions IAM role access
+  bucket_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowGitHubActionsAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = var.github_actions_role_arn
+        }
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectAcl",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "arn:aws:s3:::${local.name}-deployments/*"
+      },
+      {
+        Sid    = "AllowGitHubActionsListBucket"
+        Effect = "Allow"
+        Principal = {
+          AWS = var.github_actions_role_arn
+        }
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${local.name}-deployments"
+      }
+    ]
+  })
+
   lifecycle_rules = [
     {
       id     = "cleanup-old-deployments"
