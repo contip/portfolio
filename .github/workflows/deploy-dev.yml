@@ -61,9 +61,8 @@ jobs:
           # Build is already done in previous step
           cp -r dist/* lambda-package/
 
-          # Production deps only, pruned
-          pnpm install --frozen-lockfile
-          pnpm prune --prod
+          # Production deps only - NO PRUNING, it removes tslib
+          pnpm install --frozen-lockfile --prod
           cp -r node_modules lambda-package/
           cp package.json lambda-package/
 
