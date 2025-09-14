@@ -8,6 +8,7 @@ on:
 env:
   AWS_REGION: us-east-1
   NODE_VERSION: "20"
+  LAMBDA_ENTRY: "dist/lambda.js"   # NestJS Lambda handler entry point
 
 jobs:
   deploy:
@@ -51,30 +52,41 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Package Lambda function
+      - name: Package Lambda function (bundled)
         working-directory: ./src/backend
         run: |
           set -euo pipefail
           rm -rf lambda-package lambda-deployment.zip
           mkdir -p lambda-package
 
-          # Build is already done in previous step
-          cp -r dist/* lambda-package/
+          # Ensure esbuild is available (dev dep is fine in CI)
+          pnpm add -D esbuild
 
-          # Production deps only - NO PRUNING, it removes tslib
-          pnpm install --frozen-lockfile --prod
-          cp -r node_modules lambda-package/
-          cp package.json lambda-package/
+          # Bundle to a single file that exports "handler"
+          node -e "require('esbuild').build({
+            entryPoints: [process.env.LAMBDA_ENTRY],
+            bundle: true,
+            platform: 'node',
+            target: 'node20',
+            format: 'cjs',
+            outfile: 'lambda-package/lambda.js',
+            minify: true,
+            sourcemap: false,
+            external: [],
+            logLevel: 'info'
+          }).then(() => console.log('✅ Bundle created')).catch(err => { console.error(err); process.exit(1) })"
 
-          # Zip
+          echo "📦 Unzipped size:"
+          du -sh lambda-package
+
           cd lambda-package
-          zip -rq ../lambda-deployment.zip . -x "*.git*" "*.DS_Store*"
+          zip -rq ../lambda-deployment.zip lambda.js
           cd ..
 
-          du -sh lambda-package || true
-          ls -lh lambda-deployment.zip || true
+          echo "📦 Zipped size:"
+          ls -lh lambda-deployment.zip
 
-          # ✅ Base64-encoded SHA256 hash (what Terraform expects)
+          # Terraform expects a base64-encoded SHA256 digest (not the file contents)
           LAMBDA_HASH=$(openssl dgst -sha256 -binary lambda-deployment.zip | base64)
           echo "LAMBDA_HASH=$LAMBDA_HASH" >> "$GITHUB_ENV"
 
