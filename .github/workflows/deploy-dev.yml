@@ -128,26 +128,6 @@ jobs:
         working-directory: ./src/infra/environments/dev
         run: terraform init
 
-      - name: Import existing buckets (idempotent)
-        working-directory: ./src/infra/environments/dev
-        run: |
-          set -euo pipefail
-
-          imp() {
-            addr="$1"; id="$2"
-            if terraform state show "$addr" >/dev/null 2>&1; then
-              echo "State already has $addr"
-            else
-              echo "Importing $addr -> $id"
-              terraform import "$addr" "$id" || true
-            fi
-          }
-
-          # Buckets exist; import the bucket resources only.
-          imp 'module.s3_deployments.aws_s3_bucket.this' portfolio-dev-deployments
-          imp 'module.s3_media.aws_s3_bucket.this'       portfolio-dev-media
-          imp 'module.s3_frontend.aws_s3_bucket.this'    dev.petertconti.com
-
       - name: Terraform Plan with new Lambda
         working-directory: ./src/infra/environments/dev
         run: |

@@ -330,6 +330,7 @@ module "cloudfront" {
   hosted_zone_id      = var.hosted_zone_id  # From parent account
   certificate_arn     = module.acm.certificate_arn
   api_gateway_domain  = module.api_gateway.api_domain_name
+  api_gateway_stage   = "dev"  # CRITICAL: This fixes the API routing
   s3_bucket_domain    = module.s3_frontend.bucket_regional_domain_name
 
   tags = local.common_tags

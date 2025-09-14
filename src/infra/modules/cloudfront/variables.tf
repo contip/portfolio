@@ -23,6 +23,12 @@ variable "api_gateway_domain" {
   type        = string
 }
 
+variable "api_gateway_stage" {
+  description = "API Gateway stage name for origin path"
+  type        = string
+  default     = ""
+}
+
 variable "s3_bucket_domain" {
   description = "S3 bucket regional domain name"
   type        = string
