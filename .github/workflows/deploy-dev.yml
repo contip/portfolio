@@ -113,7 +113,8 @@ jobs:
       - name: Create terraform.tfvars file
         working-directory: ./src/infra/environments/dev
         run: |
-          echo "${{ secrets.TFVARS_CONTENT_DEV }}" > terraform.tfvars
+          printf '%s' "${{ secrets.TFVARS_CONTENT_DEV }}" | tr -d '\r' > terraform.tfvars
+          echo "Wrote terraform.tfvars ($(wc -c < terraform.tfvars) bytes)"
 
       - name: Terraform Init
         working-directory: ./src/infra/environments/dev
