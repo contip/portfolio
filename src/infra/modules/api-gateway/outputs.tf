@@ -17,3 +17,10 @@ output "stage_name" {
   description = "API Gateway stage name"
   value       = aws_api_gateway_stage.this.stage_name
 }
+
+output "api_domain_name" {
+  description = "API Gateway domain name for CloudFront origin"
+  value       = "${aws_api_gateway_rest_api.this.id}.execute-api.${data.aws_region.current.name}.amazonaws.com"
+}
+
+data "aws_region" "current" {}

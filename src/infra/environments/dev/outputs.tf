@@ -23,16 +23,6 @@ output "nat_gateway_public_ips" {
   value       = module.vpc.nat_gateway_public_ips
 }
 
-output "dynamodb_table_name" {
-  description = "Name of the DynamoDB table"
-  value       = module.dynamodb.table_name
-}
-
-output "dynamodb_table_arn" {
-  description = "ARN of the DynamoDB table"
-  value       = module.dynamodb.table_arn
-}
-
 output "api_gateway_url" {
   description = "API Gateway URL"
   value       = module.api_gateway.api_url

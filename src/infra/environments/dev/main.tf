@@ -17,6 +17,19 @@ provider "aws" {
   }
 }
 
+# Provider for parent account Route53 access
+provider "aws" {
+  alias   = "route53"
+  region  = local.region
+  profile = var.aws_profile
+
+  assume_role {
+    role_arn     = var.route53_cross_account_role_arn
+    external_id  = "route53-dev-access"
+    session_name = "terraform-route53-dev"
+  }
+}
+
 locals {
   region = "us-east-1"
   name   = "portfolio-dev"
@@ -65,15 +78,6 @@ module "vpc" {
   tags = local.common_tags
 }
 
-module "dynamodb" {
-  source = "../../modules/dynamodb"
-
-  table_name = "${local.name}-table"
-
-  enable_point_in_time_recovery = false  # Save money in dev
-
-  tags = local.common_tags
-}
 
 # S3 bucket for Lambda deployments
 module "s3_deployments" {
@@ -141,20 +145,18 @@ module "lambda" {
   source = "../../modules/lambda"
 
   function_name = "${local.name}-api"
-  handler       = "index.handler"
+  handler       = "lambda.handler"
   runtime       = "nodejs20.x"
   memory_size   = 512
   timeout       = 30
   environment   = "dev"
 
-  # Lambda code from S3
+  # Lambda code from S3 (dynamic deployment)
   s3_bucket        = module.s3_deployments.bucket_id
-  s3_key           = aws_s3_object.lambda_placeholder.key
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  s3_key           = var.lambda_s3_key
+  source_code_hash = var.lambda_source_code_hash != "" ? var.lambda_source_code_hash : data.archive_file.lambda_placeholder.output_base64sha256
 
-  # DynamoDB access
-  dynamodb_table_name = module.dynamodb.table_name
-  dynamodb_table_arn  = module.dynamodb.table_arn
+  # No DynamoDB dependencies for public demo
 
   # API Gateway integration
   api_gateway_execution_arn = module.api_gateway.api_execution_arn
@@ -168,6 +170,12 @@ module "lambda" {
   tags = local.common_tags
 
   depends_on = [aws_s3_object.lambda_placeholder]
+}
+
+# Attach Parameter Store access to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_parameter_access" {
+  role       = module.lambda.role_name
+  policy_arn = module.parameter_store.iam_policy_arn
 }
 
 # Security group for Lambda
@@ -196,6 +204,47 @@ resource "aws_security_group" "lambda" {
   }
 }
 
+module "parameter_store" {
+  source = "../../modules/parameter-store"
+
+  environment = "dev"
+
+  parameters = {
+    "/portfolio/dev/jwt_secret" = {
+      description = "JWT secret for authentication"
+      type        = "SecureString"
+      value       = "portfolio-jwt-secret-dev-${random_password.jwt_secret.result}"
+    }
+    "/portfolio/dev/google_client_id" = {
+      description = "Google OAuth Client ID"
+      type        = "String"
+      value       = var.google_client_id
+    }
+    "/portfolio/dev/google_client_secret" = {
+      description = "Google OAuth Client Secret"
+      type        = "SecureString"
+      value       = var.google_client_secret
+    }
+    "/portfolio/dev/allowed_emails" = {
+      description = "Comma-separated list of allowed emails"
+      type        = "String"
+      value       = var.allowed_emails
+    }
+    "/portfolio/dev/application_stage" = {
+      description = "Application stage"
+      type        = "String"
+      value       = var.application_stage
+    }
+  }
+
+  tags = local.common_tags
+}
+
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = true
+}
+
 module "api_gateway" {
   source = "../../modules/api-gateway"
 
@@ -206,4 +255,80 @@ module "api_gateway" {
   lambda_invoke_arn = module.lambda.invoke_arn
 
   tags = local.common_tags
+}
+
+# Using existing hosted zone from parent account
+# Note: petertconti.com domain and hosted zone are in the parent AWS account
+# ACM can still validate across accounts using DNS validation
+
+# S3 bucket for frontend hosting
+module "s3_frontend" {
+  source = "../../modules/s3"
+
+  bucket_name         = "dev.petertconti.com"
+  enable_versioning   = false
+  block_public_access = true  # CloudFront OAC will handle access
+
+  tags = local.common_tags
+}
+
+# ACM Certificate for dev.petertconti.com
+module "acm" {
+  source = "../../modules/acm"
+
+  domain_name    = "dev.petertconti.com"
+  hosted_zone_id = var.hosted_zone_id  # From parent account
+
+  tags = local.common_tags
+
+  providers = {
+    aws.route53 = aws.route53
+  }
+}
+
+# CloudFront Distribution
+module "cloudfront" {
+  source = "../../modules/cloudfront"
+
+  environment         = "dev"
+  domain_names        = ["dev.petertconti.com"]
+  hosted_zone_id      = var.hosted_zone_id  # From parent account
+  certificate_arn     = module.acm.certificate_arn
+  api_gateway_domain  = module.api_gateway.api_domain_name
+  s3_bucket_domain    = module.s3_frontend.bucket_regional_domain_name
+
+  tags = local.common_tags
+
+  providers = {
+    aws.route53 = aws.route53
+  }
+
+  depends_on = [module.acm]
+}
+
+# S3 bucket policy for CloudFront OAC access (created after CloudFront)
+resource "aws_s3_bucket_policy" "frontend_cloudfront_policy" {
+  bucket = module.s3_frontend.bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowCloudFrontAccess"
+        Effect    = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${module.s3_frontend.bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = module.cloudfront.distribution_arn
+          }
+        }
+      }
+    ]
+  })
+
+  depends_on = [module.cloudfront, module.s3_frontend]
 }

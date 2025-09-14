@@ -46,8 +46,9 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
 
 # DynamoDB access policy
 resource "aws_iam_role_policy" "dynamodb_access" {
-  name = "${var.function_name}-dynamodb"
-  role = aws_iam_role.lambda.id
+  count = var.dynamodb_table_arn != null ? 1 : 0
+  name  = "${var.function_name}-dynamodb"
+  role  = aws_iam_role.lambda.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -95,10 +96,10 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = merge(
       {
-        NODE_ENV            = var.environment
-        DYNAMODB_TABLE_NAME = var.dynamodb_table_name
-        REGION              = var.region
+        NODE_ENV = var.environment
+        REGION   = var.region
       },
+      var.dynamodb_table_name != null ? { DYNAMODB_TABLE_NAME = var.dynamodb_table_name } : {},
       var.environment_variables
     )
   }
@@ -115,8 +116,7 @@ resource "aws_lambda_function" "this" {
   tags = var.tags
 
   depends_on = [
-    aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy.dynamodb_access
+    aws_iam_role_policy_attachment.lambda_basic
   ]
 }
 

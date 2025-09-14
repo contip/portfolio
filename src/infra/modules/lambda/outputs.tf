@@ -17,3 +17,8 @@ output "role_arn" {
   description = "Lambda IAM role ARN"
   value       = aws_iam_role.lambda.arn
 }
+
+output "role_name" {
+  description = "Lambda IAM role name"
+  value       = aws_iam_role.lambda.name
+}

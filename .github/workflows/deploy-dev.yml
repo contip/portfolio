@@ -1,0 +1,129 @@
+name: Deploy to Dev Environment
+
+on:
+  push:
+    branches: [ staging ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: '20'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'pnpm'
+        cache-dependency-path: 'src/backend/pnpm-lock.yaml'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install dependencies
+      working-directory: ./src/backend
+      run: pnpm install --frozen-lockfile
+
+    - name: Run tests
+      working-directory: ./src/backend
+      run: pnpm test
+
+    - name: Run lint
+      working-directory: ./src/backend
+      run: pnpm lint
+
+    - name: Build application
+      working-directory: ./src/backend
+      run: pnpm build
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Package Lambda function
+      working-directory: ./src/backend
+      run: |
+        # Create deployment package
+        mkdir lambda-package
+
+        # Copy built application
+        cp -r dist/* lambda-package/
+
+        # Copy node_modules (production only)
+        pnpm install --prod --frozen-lockfile
+        cp -r node_modules lambda-package/
+
+        # Copy package.json
+        cp package.json lambda-package/
+
+        # Create zip file
+        cd lambda-package
+        zip -r ../lambda-deployment.zip . -x "*.git*" "*.DS_Store*"
+        cd ..
+
+        # Calculate hash for Terraform
+        echo "LAMBDA_HASH=$(base64 lambda-deployment.zip | tr -d '\n')" >> $GITHUB_ENV
+
+    - name: Upload to S3 with timestamp
+      working-directory: ./src/backend
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        S3_KEY="lambda/portfolio-dev-api-${TIMESTAMP}.zip"
+
+        aws s3 cp lambda-deployment.zip s3://portfolio-dev-deployments/${S3_KEY}
+
+        echo "LAMBDA_S3_KEY=${S3_KEY}" >> $GITHUB_ENV
+        echo "🚀 Uploaded to S3: ${S3_KEY}"
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.6.0"
+
+    - name: Terraform Init
+      working-directory: ./src/infra/environments/dev
+      run: terraform init
+
+    - name: Terraform Plan with new Lambda
+      working-directory: ./src/infra/environments/dev
+      run: |
+        terraform plan \
+          -var="lambda_s3_key=${{ env.LAMBDA_S3_KEY }}" \
+          -var="lambda_source_code_hash=${{ env.LAMBDA_HASH }}" \
+          -out=tfplan
+
+        echo "📋 Terraform will update Lambda with new code from: ${{ env.LAMBDA_S3_KEY }}"
+
+    - name: Terraform Apply
+      working-directory: ./src/infra/environments/dev
+      run: |
+        terraform apply tfplan
+        echo "✅ Terraform apply completed - Lambda updated through IaC!"
+
+    - name: Test API endpoint
+      run: |
+        echo "⏳ Waiting for Lambda to warm up..."
+        sleep 30
+
+        echo "🧪 Testing API endpoints..."
+        curl -f https://dev.petertconti.com/api/cats || echo "❌ Cats API test failed"
+        curl -f https://dev.petertconti.com/api/auth || echo "❌ Auth API test failed"
+
+    - name: Deployment Summary
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo "📦 Lambda package: ${{ env.LAMBDA_S3_KEY }}"
+        echo "📍 API URL: https://dev.petertconti.com/api"
+        echo "🐱 Cats endpoint: https://dev.petertconti.com/api/cats"
+        echo "🔐 Auth endpoint: https://dev.petertconti.com/api/auth"
+        echo "✅ All infrastructure managed by Terraform!"

@@ -36,11 +36,13 @@ variable "environment" {
 variable "dynamodb_table_name" {
   description = "DynamoDB table name"
   type        = string
+  default     = null
 }
 
 variable "dynamodb_table_arn" {
   description = "DynamoDB table ARN"
   type        = string
+  default     = null
 }
 
 variable "api_gateway_execution_arn" {
