@@ -81,10 +81,15 @@ jobs:
         TIMESTAMP=$(date +%Y%m%d%H%M%S)
         S3_KEY="lambda/portfolio-dev-api-${TIMESTAMP}.zip"
 
-        aws s3 cp lambda-deployment.zip s3://portfolio-dev-deployments/${S3_KEY}
+        echo "🚀 Uploading to S3: ${S3_KEY}"
+        echo "📊 File size: $(ls -lh lambda-deployment.zip | awk '{print $5}')"
+
+        aws s3 cp lambda-deployment.zip "s3://portfolio-dev-deployments/${S3_KEY}" \
+          --region us-east-1 \
+          --no-progress
 
         echo "LAMBDA_S3_KEY=${S3_KEY}" >> $GITHUB_ENV
-        echo "🚀 Uploaded to S3: ${S3_KEY}"
+        echo "✅ Upload completed: ${S3_KEY}"
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
