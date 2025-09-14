@@ -1,8 +1,3 @@
-variable "aws_profile" {
-  description = "AWS profile to use for deployment"
-  type        = string
-}
-
 variable "google_client_id" {
   description = "Google OAuth Client ID"
   type        = string

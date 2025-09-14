@@ -10,7 +10,6 @@ terraform {
 
 provider "aws" {
   region  = local.region
-  profile = var.aws_profile
 
   default_tags {
     tags = local.common_tags
@@ -21,7 +20,6 @@ provider "aws" {
 provider "aws" {
   alias   = "route53"
   region  = local.region
-  profile = var.aws_profile
 
   assume_role {
     role_arn     = var.route53_cross_account_role_arn
