@@ -110,10 +110,18 @@ jobs:
         with:
           terraform_version: "1.6.0"
 
-      - name: Create terraform.tfvars file
+      - name: Create terraform.tfvars file (base64, exact)
         working-directory: ./src/infra/environments/dev
+        shell: bash
         run: |
-          printf '%s' "${{ secrets.TFVARS_CONTENT_DEV }}" | tr -d '\r' > terraform.tfvars
+          set -euo pipefail
+          # Decode the entire tfvars from a base64 secret (no YAML/shell parsing issues)
+          printf '%s' "${{ secrets.TFVARS_CONTENT_DEV_B64 }}" | base64 -d > terraform.tfvars
+
+          # Normalize CRLF -> LF just in case
+          tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
+
+          # Quick sanity: show size (not contents)
           echo "Wrote terraform.tfvars ($(wc -c < terraform.tfvars) bytes)"
 
       - name: Terraform Init
