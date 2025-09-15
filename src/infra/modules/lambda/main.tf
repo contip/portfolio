@@ -66,6 +66,60 @@ resource "aws_iam_role_policy" "lambda_ecr" {
   })
 }
 
+# DynamoDB full access policy
+resource "aws_iam_role_policy" "lambda_dynamodb" {
+  name = "${var.function_name}-dynamodb-access"
+  role = aws_iam_role.lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchGetItem",
+          "dynamodb:BatchWriteItem",
+          "dynamodb:CreateTable",
+          "dynamodb:DeleteTable",
+          "dynamodb:DeleteItem",
+          "dynamodb:DescribeTable",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:GetItem",
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:ListStreams",
+          "dynamodb:ListTables",
+          "dynamodb:PutItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:UpdateItem",
+          "dynamodb:UpdateTable",
+          "dynamodb:CreateGlobalSecondaryIndex",
+          "dynamodb:UpdateGlobalSecondaryIndex",
+          "dynamodb:DeleteGlobalSecondaryIndex",
+          "dynamodb:CreateBackup",
+          "dynamodb:DeleteBackup",
+          "dynamodb:DescribeBackup",
+          "dynamodb:ListBackups",
+          "dynamodb:RestoreTableFromBackup",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:UpdateContinuousBackups",
+          "dynamodb:ExportTableToPointInTime",
+          "dynamodb:ImportTable",
+          "dynamodb:DescribeExport",
+          "dynamodb:DescribeImport",
+          "dynamodb:ListExports",
+          "dynamodb:ListImports",
+          "dynamodb:TagResource",
+          "dynamodb:UntagResource",
+          "dynamodb:ListTagsOfResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 ################################################################################
 # Lambda Function - CONTAINER ONLY
 ################################################################################
@@ -110,7 +164,8 @@ resource "aws_lambda_function" "this" {
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy.lambda_ecr
+    aws_iam_role_policy.lambda_ecr,
+    aws_iam_role_policy.lambda_dynamodb
   ]
 }
 

@@ -13,36 +13,6 @@ terraform {
 # CloudFront Distribution
 ################################################################################
 
-resource "aws_cloudfront_origin_request_policy" "api_no_host" {
-  name    = "${var.environment}-api-no-host"
-  comment = "Forward needed headers, all cookies & query strings (no Host)"
-
-  cookies_config { cookie_behavior = "all" }
-
-  headers_config {
-    header_behavior = "whitelist"
-    headers {
-      items = [
-
-        # typical useful headers for APIs
-        "Accept",
-        "Accept-Language",
-        "Origin",
-        "Referer",
-        "User-Agent",
-        "Authorization",
-        # CloudFront’s proto/device hints (optional)
-        "CloudFront-Forwarded-Proto",
-        "CloudFront-Is-Desktop-Viewer",
-        "CloudFront-Is-Mobile-Viewer",
-        "CloudFront-Is-Tablet-Viewer"
-      ]
-    }
-
-  }
-
-  query_strings_config { query_string_behavior = "all" }
-}
 
 
 resource "aws_cloudfront_distribution" "this" {
@@ -98,7 +68,7 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods  = ["GET", "HEAD"]
 
     cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS Managed - CachingDisabled
-    origin_request_policy_id = aws_cloudfront_origin_request_policy.api_no_host.id
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # AWS Managed - AllViewerExceptHostHeader
 
 
   }
