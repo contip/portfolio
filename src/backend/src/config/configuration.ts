@@ -61,9 +61,9 @@ const getEnvValue = (key: string, fallback?: string): string => {
 
 export default async (): Promise<AppConfig> => {
   const environment = getEnvValue('NODE_ENV', 'development');
-  // Map NODE_ENV to our Terraform environment naming
-  const terraformEnv = environment === 'development' ? 'dev' : environment;
-  const parameterPrefix = `/portfolio/${terraformEnv}`;
+  // Use APPLICATION_STAGE to determine which parameters to read
+  const applicationStage = getEnvValue('APPLICATION_STAGE', 'dev');
+  const parameterPrefix = `/portfolio/${applicationStage}`;
 
   // Try AWS Parameter Store first, fallback to .env
   const jwtSecret =
@@ -82,9 +82,9 @@ export default async (): Promise<AppConfig> => {
     (await getParameter(`${parameterPrefix}/allowed_emails`)) ||
     getEnvValue('ALLOWED_EMAILS', '');
 
-  const applicationStage =
+  const applicationStageFromParam =
     (await getParameter(`${parameterPrefix}/application_stage`)) ||
-    getEnvValue('APPLICATION_STAGE', 'dev');
+    applicationStage;
 
   const allowedEmails = allowedEmailsStr
     .split(',')

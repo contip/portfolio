@@ -205,7 +205,7 @@ module "lambda" {
   environment   = "dev"
 
   # Container image from ECR
-  image_uri = var.lambda_image_uri != "" ? var.lambda_image_uri : "${aws_ecr_repository.lambda.repository_url}:latest"
+  image_uri = var.lambda_image_uri != "" ? var.lambda_image_uri : "${aws_ecr_repository.lambda.repository_url}:arm64"
 
   # API Gateway integration
   api_gateway_execution_arn = module.api_gateway.api_execution_arn
@@ -218,8 +218,9 @@ module "lambda" {
 
   # Environment variables for the container
   environment_variables = {
-    NODE_ENV = "production"
-    PORT     = "8080"
+    NODE_ENV          = "production"
+    PORT              = "8080"
+    APPLICATION_STAGE = "dev"
   }
 
   tags = local.common_tags

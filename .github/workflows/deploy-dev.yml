@@ -69,12 +69,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Build multi-platform image
+          # Build ARM64 image without provenance
           echo "🔨 Building Docker image for ARM64..."
           docker buildx build \
             --platform linux/arm64 \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
+            --provenance=false \
             -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
             -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
             --push \
