@@ -66,8 +66,13 @@ const checkAuth = () => {
   // Check for token in URL params (from OAuth callback)
   const urlParams = new URLSearchParams(window.location.search)
   const tokenParam = urlParams.get('token')
+  const errorParam = urlParams.get('error')
 
-  if (tokenParam) {
+  if (errorParam) {
+    error.value = 'Authentication failed. Please try again.'
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname)
+  } else if (tokenParam) {
     localStorage.setItem('token', tokenParam)
     token.value = tokenParam
     isAuthenticated.value = true

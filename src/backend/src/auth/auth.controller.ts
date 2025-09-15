@@ -1,4 +1,4 @@
-import { Controller, Get, Request, UseGuards, Redirect, Res } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -12,24 +12,38 @@ export class AuthController {
   @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth() {
+  async googleAuth(@Request() req: any) {
     // Initiates Google OAuth flow
+    // Guard handles the redirect
+    return { message: 'Redirecting to Google...' };
   }
 
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthCallback(@Request() req, @Res() res: Response) {
-    // Google OAuth callback
-    const { access_token } = await this.authService.login(req.user);
+  async googleAuthCallback(@Request() req: any, @Res() res: Response) {
+    try {
+      // Google OAuth callback - req.user is populated by Passport
+      if (!req.user) {
+        return res.redirect('https://dev.petertconti.com?error=auth_failed');
+      }
 
-    // Determine redirect URL based on environment
-    const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
-      ? 'https://dev.petertconti.com'
-      : 'http://localhost:3000';
+      const { access_token } = await this.authService.login(req.user);
 
-    // Redirect to frontend with token
-    res.redirect(`${redirectUrl}?token=${access_token}`);
+      // Determine redirect URL based on environment
+      const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
+        ? 'https://dev.petertconti.com'
+        : 'http://localhost:3000';
+
+      // Redirect to frontend with token
+      return res.redirect(`${redirectUrl}?token=${access_token}`);
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
+        ? 'https://dev.petertconti.com'
+        : 'http://localhost:3000';
+      return res.redirect(`${redirectUrl}?error=auth_failed`);
+    }
   }
 
   @Get('profile')
