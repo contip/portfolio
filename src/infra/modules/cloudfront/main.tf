@@ -57,7 +57,7 @@ resource "aws_cloudfront_distribution" "this" {
 
   # API routes - Backend (API Gateway)
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
+    path_pattern           = "api/*"
     target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
@@ -74,6 +74,14 @@ resource "aws_cloudfront_distribution" "this" {
     error_code         = 404
     response_code      = 200
     response_page_path = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
+    error_caching_min_ttl = 0
   }
 
   # SSL Certificate
