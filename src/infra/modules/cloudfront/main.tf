@@ -57,7 +57,7 @@ resource "aws_cloudfront_distribution" "this" {
 
   # API routes - Backend (API Gateway)
   ordered_cache_behavior {
-    path_pattern           = "api/*"
+    path_pattern           = "/api/*"
     target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
