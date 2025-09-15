@@ -28,9 +28,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const email = emails[0]?.value;
 
     // Check email whitelist
-    const allowedEmails = this.configService.get<string[]>('auth.allowedEmails') || [];
+    const allowedEmails =
+      this.configService.get<string[]>('auth.allowedEmails') || [];
     if (!allowedEmails.includes(email)) {
-      throw new UnauthorizedException(`Access denied for ${email}. Not in whitelist.`);
+      throw new UnauthorizedException(
+        `Access denied for ${email}. Not in whitelist.`,
+      );
     }
 
     const googleUser = {
