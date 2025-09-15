@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { CatsService } from './cats.service';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { Cat } from './interfaces/cat.interface';
@@ -23,11 +24,13 @@ export class CatsController {
     return this.catsService.create(createCatDto);
   }
 
+  @Public()
   @Get()
   async findAll(): Promise<Cat[]> {
     return this.catsService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     console.log('Getting cat with ID:', id);
