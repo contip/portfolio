@@ -66,7 +66,7 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods  = ["GET", "HEAD"]
 
     cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS Managed - CachingDisabled
-    origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # AWS Managed - CORS-S3Origin
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eaffa9a7" # AWS Managed - AllViewer (forwards ALL headers/cookies/query strings)
   }
 
   # SPA fallback for client-side routing
