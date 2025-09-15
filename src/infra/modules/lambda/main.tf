@@ -44,11 +44,10 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# DynamoDB access policy
-resource "aws_iam_role_policy" "dynamodb_access" {
-  count = var.dynamodb_table_arn != null ? 1 : 0
-  name  = "${var.function_name}-dynamodb"
-  role  = aws_iam_role.lambda.id
+# ECR access for pulling images - using inline policy
+resource "aws_iam_role_policy" "lambda_ecr" {
+  name = "${var.function_name}-ecr-access"
+  role = aws_iam_role.lambda.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -56,42 +55,37 @@ resource "aws_iam_role_policy" "dynamodb_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:BatchGetItem",
-          "dynamodb:BatchWriteItem",
-          "dynamodb:DescribeTable"
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetAuthorizationToken"
         ]
-        Resource = [
-          var.dynamodb_table_arn,
-          "${var.dynamodb_table_arn}/index/*"
-        ]
+        Resource = "*"
       }
     ]
   })
 }
 
 ################################################################################
-# Lambda Function
+# Lambda Function - CONTAINER ONLY
 ################################################################################
 
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = aws_iam_role.lambda.arn
-  handler       = var.handler
-  runtime       = var.runtime
+
+  # CONTAINER DEPLOYMENT ONLY
+  package_type  = "Image"
+  image_uri     = var.image_uri
+
   timeout       = var.timeout
   memory_size   = var.memory_size
-  architectures = ["arm64"]  # Use Graviton2 for cost savings
+  architectures = ["arm64"]  # ARM64 for cost savings
 
-  # Code from S3 - deployed via CI/CD
-  s3_bucket        = var.s3_bucket
-  s3_key           = var.s3_key
-  source_code_hash = var.source_code_hash
+  # Larger ephemeral storage for container workloads
+  ephemeral_storage {
+    size = 2048  # 2GB
+  }
 
   environment {
     variables = merge(
@@ -99,7 +93,6 @@ resource "aws_lambda_function" "this" {
         NODE_ENV = var.environment
         REGION   = var.region
       },
-      var.dynamodb_table_name != null ? { DYNAMODB_TABLE_NAME = var.dynamodb_table_name } : {},
       var.environment_variables
     )
   }
@@ -116,17 +109,9 @@ resource "aws_lambda_function" "this" {
   tags = var.tags
 
   depends_on = [
-    aws_iam_role_policy_attachment.lambda_basic
+    aws_iam_role_policy_attachment.lambda_basic,
+    aws_iam_role_policy.lambda_ecr
   ]
-}
-
-# Lambda permission for API Gateway
-resource "aws_lambda_permission" "api_gateway" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.this.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${var.api_gateway_execution_arn}/*/*"
 }
 
 ################################################################################
@@ -138,4 +123,16 @@ resource "aws_cloudwatch_log_group" "lambda" {
   retention_in_days = var.log_retention_days
 
   tags = var.tags
+}
+
+################################################################################
+# API Gateway Permission
+################################################################################
+
+resource "aws_lambda_permission" "api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.this.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${var.api_gateway_execution_arn}/*/*"
 }

@@ -8,6 +8,11 @@ output "api_url" {
   value       = aws_api_gateway_stage.this.invoke_url
 }
 
+output "api_endpoint_url" {
+  description = "API Gateway invoke URL (alias)"
+  value       = aws_api_gateway_stage.this.invoke_url
+}
+
 output "api_execution_arn" {
   description = "API Gateway execution ARN"
   value       = aws_api_gateway_rest_api.this.execution_arn

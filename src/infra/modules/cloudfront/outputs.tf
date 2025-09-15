@@ -8,6 +8,11 @@ output "distribution_domain_name" {
   value       = aws_cloudfront_distribution.this.domain_name
 }
 
+output "domain_name" {
+  description = "CloudFront Distribution domain name (alias)"
+  value       = aws_cloudfront_distribution.this.domain_name
+}
+
 output "distribution_arn" {
   description = "CloudFront Distribution ARN"
   value       = aws_cloudfront_distribution.this.arn

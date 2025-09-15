@@ -8,6 +8,11 @@ output "function_arn" {
   value       = aws_lambda_function.this.arn
 }
 
+output "arn" {
+  description = "Lambda function ARN (alias)"
+  value       = aws_lambda_function.this.arn
+}
+
 output "invoke_arn" {
   description = "Lambda invoke ARN for API Gateway"
   value       = aws_lambda_function.this.invoke_arn

@@ -32,3 +32,38 @@ output "lambda_function_name" {
   description = "Lambda function name"
   value       = module.lambda.function_name
 }
+
+output "lambda_function_arn" {
+  description = "Lambda function ARN"
+  value       = module.lambda.arn
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for Lambda container images"
+  value       = aws_ecr_repository.lambda.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ECR repository ARN"
+  value       = aws_ecr_repository.lambda.arn
+}
+
+output "cloudfront_distribution_url" {
+  description = "CloudFront distribution URL"
+  value       = "https://dev.petertconti.com"
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = module.cloudfront.distribution_id
+}
+
+output "s3_frontend_bucket" {
+  description = "S3 bucket for frontend hosting"
+  value       = module.s3_frontend.bucket_id
+}
+
+output "s3_media_bucket" {
+  description = "S3 bucket for media/assets"
+  value       = module.s3_media.bucket_id
+}

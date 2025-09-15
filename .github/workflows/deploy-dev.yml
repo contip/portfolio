@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: us-east-1
   NODE_VERSION: "20"
-  LAMBDA_ENTRY: "dist/lambda.js"   # NestJS Lambda handler entry point
+  ECR_REPOSITORY: portfolio-dev-lambda
 
 jobs:
   deploy:
@@ -52,124 +52,126 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Package Lambda function (bundled)
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push Docker image
         working-directory: ./src/backend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
-          rm -rf lambda-package lambda-deployment.zip
-          mkdir -p lambda-package
 
-          # Ensure esbuild is available (dev dep is fine in CI)
-          pnpm add -D esbuild
+          # Build multi-platform image
+          echo "🔨 Building Docker image for ARM64..."
+          docker buildx build \
+            --platform linux/arm64 \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+            --push \
+            .
 
-          # Bundle to a single file that exports "handler"
-          node -e "require('esbuild').build({
-            entryPoints: [process.env.LAMBDA_ENTRY],
-            bundle: true,
-            platform: 'node',
-            target: 'node20',
-            format: 'cjs',
-            outfile: 'lambda-package/lambda.js',
-            minify: true,
-            sourcemap: false,
-            external: [],
-            logLevel: 'info'
-          }).then(() => console.log('✅ Bundle created')).catch(err => { console.error(err); process.exit(1) })"
+          echo "✅ Image pushed to ECR:"
+          echo "   ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          echo "   ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
-          echo "📦 Unzipped size:"
-          du -sh lambda-package
-
-          cd lambda-package
-          zip -rq ../lambda-deployment.zip lambda.js
-          cd ..
-
-          echo "📦 Zipped size:"
-          ls -lh lambda-deployment.zip
-
-          # Terraform expects a base64-encoded SHA256 digest (not the file contents)
-          LAMBDA_HASH=$(openssl dgst -sha256 -binary lambda-deployment.zip | base64)
-          echo "LAMBDA_HASH=$LAMBDA_HASH" >> "$GITHUB_ENV"
-
-      - name: Who am I?
-        run: |
-          aws sts get-caller-identity
-          aws s3 ls s3://portfolio-dev-deployments/ || true
-
-      - name: Upload to S3 with timestamp
-        working-directory: ./src/backend
-        run: |
-          set -euo pipefail
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          S3_KEY="lambda/portfolio-dev-api-${TIMESTAMP}.zip"
-
-          echo "🚀 Uploading to S3: ${S3_KEY}"
-          echo "📊 File size: $(ls -lh lambda-deployment.zip | awk '{print $5}')"
-
-          SIZE=$(stat --format=%s lambda-deployment.zip 2>/dev/null || stat -f%z lambda-deployment.zip)
-          aws s3 cp lambda-deployment.zip "s3://portfolio-dev-deployments/${S3_KEY}" \
-            --region us-east-1 \
-            --no-progress \
-            --only-show-errors \
-            --expected-size "$SIZE" \
-            --cli-read-timeout 60 --cli-connect-timeout 15
-
-          echo "LAMBDA_S3_KEY=${S3_KEY}" >> "$GITHUB_ENV"
-          echo "✅ Upload completed: ${S3_KEY}"
+          # Store image URI for Terraform
+          echo "LAMBDA_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.6.0"
 
-      - name: Create terraform.tfvars file (base64, exact)
+      - name: Create terraform.tfvars file
         working-directory: ./src/infra/environments/dev
         shell: bash
         run: |
           set -euo pipefail
-          # Decode the entire tfvars from a base64 secret (no YAML/shell parsing issues)
+          # Decode the entire tfvars from a base64 secret
           printf '%s' "${{ secrets.TFVARS_CONTENT_DEV_B64 }}" | base64 -d > terraform.tfvars
 
           # Normalize CRLF -> LF just in case
           tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
 
-          # Quick sanity: show size (not contents)
           echo "Wrote terraform.tfvars ($(wc -c < terraform.tfvars) bytes)"
 
       - name: Terraform Init
         working-directory: ./src/infra/environments/dev
         run: terraform init
 
-      - name: Terraform Plan with new Lambda
+      - name: Terraform Plan with new container
         working-directory: ./src/infra/environments/dev
         run: |
           terraform plan \
-            -var="lambda_s3_key=${{ env.LAMBDA_S3_KEY }}" \
-            -var="lambda_source_code_hash=${{ env.LAMBDA_HASH }}" \
+            -var="lambda_image_uri=${{ env.LAMBDA_IMAGE_URI }}" \
             -var-file=terraform.tfvars \
             -out=tfplan
 
-          echo "📋 Terraform will update Lambda with new code from: ${{ env.LAMBDA_S3_KEY }}"
+          echo "📋 Terraform will update Lambda with new container image:"
+          echo "   ${{ env.LAMBDA_IMAGE_URI }}"
 
       - name: Terraform Apply
         working-directory: ./src/infra/environments/dev
         run: |
           terraform apply -auto-approve tfplan
-          echo "✅ Terraform apply completed - Lambda updated through IaC!"
+          echo "✅ Terraform apply completed - Lambda updated with new container!"
+
+      - name: Force Lambda update
+        run: |
+          echo "🔄 Forcing Lambda function update..."
+          aws lambda update-function-code \
+            --function-name portfolio-dev-api \
+            --image-uri ${{ env.LAMBDA_IMAGE_URI }} \
+            --region ${{ env.AWS_REGION }} \
+            --no-cli-pager || echo "Note: Lambda update may take a moment to propagate"
+
+          echo "⏳ Waiting for Lambda to stabilize..."
+          sleep 10
+
+          aws lambda wait function-updated \
+            --function-name portfolio-dev-api \
+            --region ${{ env.AWS_REGION }} || echo "Lambda is updating..."
 
       - name: Test API endpoint
         run: |
-          echo "⏳ Waiting for Lambda to warm up..."
+          echo "⏳ Waiting for Lambda cold start..."
           sleep 30
 
           echo "🧪 Testing API endpoints..."
-          curl -f https://dev.petertconti.com/api/cats || echo "❌ Cats API test failed"
-          curl -f https://dev.petertconti.com/api/auth || echo "❌ Auth API test failed"
+
+          # Test cats endpoint
+          echo "Testing /api/cats..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://dev.petertconti.com/api/cats)
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Cats API test passed (HTTP $response)"
+          else
+            echo "⚠️ Cats API returned HTTP $response"
+          fi
+
+          # Test auth endpoint
+          echo "Testing /api/auth..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://dev.petertconti.com/api/auth)
+          if [ "$response" -eq 200 ] || [ "$response" -eq 401 ]; then
+            echo "✅ Auth API test passed (HTTP $response)"
+          else
+            echo "⚠️ Auth API returned HTTP $response"
+          fi
 
       - name: Deployment Summary
         run: |
           echo "🚀 Deployment completed successfully!"
-          echo "📦 Lambda package: ${{ env.LAMBDA_S3_KEY }}"
+          echo "📦 Container image: ${{ env.LAMBDA_IMAGE_URI }}"
           echo "📍 API URL: https://dev.petertconti.com/api"
           echo "🐱 Cats endpoint: https://dev.petertconti.com/api/cats"
           echo "🔐 Auth endpoint: https://dev.petertconti.com/api/auth"
-          echo "✅ All infrastructure managed by Terraform!"
+          echo "✅ All infrastructure managed by Terraform with container deployment!"

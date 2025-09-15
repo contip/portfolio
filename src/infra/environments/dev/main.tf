@@ -84,61 +84,94 @@ module "vpc" {
 }
 
 
-# S3 bucket for Lambda deployments
-module "s3_deployments" {
-  source = "../../modules/s3"
+# ECR Repository for Lambda container images
+resource "aws_ecr_repository" "lambda" {
+  name                 = "${local.name}-lambda"
+  image_tag_mutability = "MUTABLE"
 
-  bucket_name         = "${local.name}-deployments"
-  enable_versioning   = true  # Keep deployment history
-  block_public_access = true  # Private bucket
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 
-  # Bucket policy to allow GitHub Actions IAM role access
-  bucket_policy = jsonencode({
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = local.common_tags
+}
+
+# ECR Repository Policy - Allow GitHub Actions to push images
+resource "aws_ecr_repository_policy" "lambda" {
+  repository = aws_ecr_repository.lambda.name
+
+  policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowGitHubActionsAccess"
+        Sid    = "AllowGitHubActionsPush"
         Effect = "Allow"
         Principal = {
           AWS = var.github_actions_role_arn
         }
         Action = [
-          "s3:PutObject",
-          "s3:PutObjectAcl",
-          "s3:GetObject",
-          "s3:DeleteObject"
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
         ]
-        Resource = "arn:aws:s3:::${local.name}-deployments/*"
       },
       {
-        Sid    = "AllowGitHubActionsListBucket"
+        Sid    = "AllowLambdaPull"
         Effect = "Allow"
         Principal = {
-          AWS = var.github_actions_role_arn
+          Service = "lambda.amazonaws.com"
         }
-        Action   = "s3:ListBucket"
-        Resource = "arn:aws:s3:::${local.name}-deployments"
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
       }
     ]
   })
+}
 
-  lifecycle_rules = [
-    {
-      id     = "cleanup-old-deployments"
-      status = "Enabled"
-      transitions = [
-        {
-          days          = 30
-          storage_class = "STANDARD_IA"
+# ECR Lifecycle Policy - Clean up old images
+resource "aws_ecr_lifecycle_policy" "lambda" {
+  repository = aws_ecr_repository.lambda.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
         }
-      ]
-      expiration = {
-        days = 90  # Delete old deployments after 90 days
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Remove untagged images after 7 days"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 7
+        }
+        action = {
+          type = "expire"
+        }
       }
-    }
-  ]
-
-  tags = local.common_tags
+    ]
+  })
 }
 
 # S3 bucket for portfolio media/assets
@@ -162,49 +195,36 @@ module "s3_media" {
   tags = local.common_tags
 }
 
-data "archive_file" "lambda_placeholder" {
-  type        = "zip"
-  source_file = "../../lambda-placeholder/index.js"
-  output_path = "../../lambda-placeholder/function.zip"
-}
-
-# Upload initial Lambda placeholder to S3
-resource "aws_s3_object" "lambda_placeholder" {
-  bucket = module.s3_deployments.bucket_id
-  key    = "lambda/placeholder.zip"
-  source = data.archive_file.lambda_placeholder.output_path
-  etag   = data.archive_file.lambda_placeholder.output_md5
-}
 
 module "lambda" {
   source = "../../modules/lambda"
 
   function_name = "${local.name}-api"
-  handler       = "lambda.handler"
-  runtime       = "nodejs20.x"
-  memory_size   = 512
+  memory_size   = 1024  # Increased for container workload
   timeout       = 30
   environment   = "dev"
 
-  # Lambda code from S3 (dynamic deployment)
-  s3_bucket        = module.s3_deployments.bucket_id
-  s3_key           = var.lambda_s3_key
-  source_code_hash = var.lambda_source_code_hash != "" ? var.lambda_source_code_hash : data.archive_file.lambda_placeholder.output_base64sha256
-
-  # No DynamoDB dependencies for public demo
+  # Container image from ECR
+  image_uri = var.lambda_image_uri != "" ? var.lambda_image_uri : "${aws_ecr_repository.lambda.repository_url}:latest"
 
   # API Gateway integration
   api_gateway_execution_arn = module.api_gateway.api_execution_arn
 
-  # VPC Configuration - Lambda in PRIVATE subnets (NOT database subnets!)
+  # VPC Configuration - Lambda in PRIVATE subnets
   vpc_config = {
     subnet_ids         = module.vpc.private_subnet_ids
     security_group_ids = [aws_security_group.lambda.id]
   }
 
+  # Environment variables for the container
+  environment_variables = {
+    NODE_ENV = "production"
+    PORT     = "8080"
+  }
+
   tags = local.common_tags
 
-  depends_on = [aws_s3_object.lambda_placeholder]
+  depends_on = [aws_ecr_repository.lambda]
 }
 
 # Attach Parameter Store access to Lambda role

@@ -3,16 +3,9 @@ variable "function_name" {
   type        = string
 }
 
-variable "handler" {
-  description = "Lambda function handler"
+variable "image_uri" {
+  description = "ECR image URI for Lambda container"
   type        = string
-  default     = "index.handler"
-}
-
-variable "runtime" {
-  description = "Lambda runtime"
-  type        = string
-  default     = "nodejs20.x"
 }
 
 variable "timeout" {
@@ -33,37 +26,9 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "dynamodb_table_name" {
-  description = "DynamoDB table name"
-  type        = string
-  default     = null
-}
-
-variable "dynamodb_table_arn" {
-  description = "DynamoDB table ARN"
-  type        = string
-  default     = null
-}
-
 variable "api_gateway_execution_arn" {
   description = "API Gateway execution ARN"
   type        = string
-}
-
-variable "s3_bucket" {
-  description = "S3 bucket containing the Lambda deployment package"
-  type        = string
-}
-
-variable "s3_key" {
-  description = "S3 key for the Lambda deployment package"
-  type        = string
-}
-
-variable "source_code_hash" {
-  description = "Hash of the deployment package"
-  type        = string
-  default     = null
 }
 
 variable "environment_variables" {

@@ -29,14 +29,8 @@ variable "route53_cross_account_role_arn" {
   type        = string
 }
 
-variable "lambda_s3_key" {
-  description = "S3 key for Lambda deployment package"
-  type        = string
-  default     = "lambda/placeholder.zip"
-}
-
-variable "lambda_source_code_hash" {
-  description = "Source code hash for Lambda function"
+variable "lambda_image_uri" {
+  description = "ECR image URI for Lambda container (optional - uses latest if not specified)"
   type        = string
   default     = ""
 }
