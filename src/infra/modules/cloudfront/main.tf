@@ -2,8 +2,8 @@ terraform {
   required_version = ">= 1.0"
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source                = "hashicorp/aws"
+      version               = "~> 5.0"
       configuration_aliases = [aws.route53]
     }
   }
@@ -66,21 +66,21 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods  = ["GET", "HEAD"]
 
     cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS Managed - CachingDisabled
-    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eaffa9a7" # AWS Managed - AllViewer (forwards ALL headers/cookies/query strings)
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3" # AWS Managed - AllViewer (forwards ALL headers/cookies/query strings)
   }
 
   # SPA fallback for client-side routing
   custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
     error_caching_min_ttl = 0
   }
 
   custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
     error_caching_min_ttl = 0
   }
 
@@ -119,7 +119,7 @@ resource "aws_cloudfront_origin_access_control" "this" {
 
 resource "aws_route53_record" "this" {
   provider = aws.route53
-  count = length(var.domain_names)
+  count    = length(var.domain_names)
 
   zone_id = var.hosted_zone_id
   name    = var.domain_names[count.index]
@@ -134,7 +134,7 @@ resource "aws_route53_record" "this" {
 
 resource "aws_route53_record" "ipv6" {
   provider = aws.route53
-  count = length(var.domain_names)
+  count    = length(var.domain_names)
 
   zone_id = var.hosted_zone_id
   name    = var.domain_names[count.index]
