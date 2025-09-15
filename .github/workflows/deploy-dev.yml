@@ -32,18 +32,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-          cache-dependency-path: "src/backend/pnpm-lock.yaml"
+          cache-dependency-path: "**/pnpm-lock.yaml"
 
-      - name: Install dependencies
+      # Backend build
+      - name: Install backend dependencies
         working-directory: ./src/backend
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
+      - name: Run backend tests
         working-directory: ./src/backend
         run: pnpm test
 
-      - name: Build application
+      - name: Build backend
         working-directory: ./src/backend
+        run: pnpm build
+
+      # Frontend build
+      - name: Install frontend dependencies
+        working-directory: ./src/frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: ./src/frontend
         run: pnpm build
 
       - name: Configure AWS credentials
@@ -125,21 +135,48 @@ jobs:
           terraform apply -auto-approve tfplan
           echo "✅ Terraform apply completed - Lambda updated with new container!"
 
-      - name: Force Lambda update
+      - name: Deploy frontend to S3
         run: |
-          echo "🔄 Forcing Lambda function update..."
-          aws lambda update-function-code \
-            --function-name portfolio-dev-api \
-            --image-uri ${{ env.LAMBDA_IMAGE_URI }} \
-            --region ${{ env.AWS_REGION }} \
-            --no-cli-pager || echo "Note: Lambda update may take a moment to propagate"
+          echo "🚀 Deploying frontend to S3..."
+          aws s3 sync ./src/frontend/dist s3://dev.petertconti.com/ \
+            --delete \
+            --cache-control "public, max-age=3600" \
+            --exclude "*.html" \
+            --no-cli-pager
 
-          echo "⏳ Waiting for Lambda to stabilize..."
-          sleep 10
+          # HTML files with shorter cache
+          aws s3 sync ./src/frontend/dist s3://dev.petertconti.com/ \
+            --delete \
+            --cache-control "public, max-age=300" \
+            --exclude "*" \
+            --include "*.html" \
+            --content-type "text/html" \
+            --no-cli-pager
 
+          echo "✅ Frontend deployed to S3!"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "🔄 Invalidating CloudFront cache..."
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?contains(Aliases.Items, 'dev.petertconti.com')].Id" \
+            --output text)
+
+          if [ -n "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*" \
+              --no-cli-pager
+            echo "✅ CloudFront cache invalidated for distribution $DISTRIBUTION_ID"
+          else
+            echo "⚠️ No CloudFront distribution found for dev.petertconti.com"
+          fi
+
+      - name: Wait for Lambda to become active
+        run: |
           aws lambda wait function-updated \
             --function-name portfolio-dev-api \
-            --region ${{ env.AWS_REGION }} || echo "Lambda is updating..."
+            --region ${{ env.AWS_REGION }} || true
 
       - name: Test API endpoint
         run: |
@@ -169,8 +206,9 @@ jobs:
       - name: Deployment Summary
         run: |
           echo "🚀 Deployment completed successfully!"
-          echo "📦 Container image: ${{ env.LAMBDA_IMAGE_URI }}"
+          echo "📦 Backend container: ${{ env.LAMBDA_IMAGE_URI }}"
+          echo "🌐 Frontend URL: https://dev.petertconti.com"
           echo "📍 API URL: https://dev.petertconti.com/api"
           echo "🐱 Cats endpoint: https://dev.petertconti.com/api/cats"
-          echo "🔐 Auth endpoint: https://dev.petertconti.com/api/auth"
-          echo "✅ All infrastructure managed by Terraform with container deployment!"
+          echo "🔐 Auth endpoint: https://dev.petertconti.com/api/auth/google"
+          echo "✅ Full stack deployed: Vue frontend (S3) + NestJS backend (Lambda) + CloudFront CDN!"
