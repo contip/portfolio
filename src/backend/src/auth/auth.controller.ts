@@ -1,9 +1,8 @@
-import { Controller, Get, Request, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards, Redirect } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
-import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -12,38 +11,27 @@ export class AuthController {
   @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth(@Request() req: any) {
+  async googleAuth() {
     // Initiates Google OAuth flow
-    // Guard handles the redirect
-    return { message: 'Redirecting to Google...' };
   }
 
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthCallback(@Request() req: any, @Res() res: Response) {
-    try {
-      // Google OAuth callback - req.user is populated by Passport
-      if (!req.user) {
-        return res.redirect('https://dev.petertconti.com?error=auth_failed');
-      }
+  @Redirect()
+  async googleAuthCallback(@Request() req: any) {
+    // Google OAuth callback
+    const { access_token } = await this.authService.login(req.user);
 
-      const { access_token } = await this.authService.login(req.user);
+    // Determine redirect URL based on environment
+    const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
+      ? 'https://dev.petertconti.com'
+      : 'http://localhost:3000';
 
-      // Determine redirect URL based on environment
-      const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
-        ? 'https://dev.petertconti.com'
-        : 'http://localhost:3000';
-
-      // Redirect to frontend with token
-      return res.redirect(`${redirectUrl}?token=${access_token}`);
-    } catch (error) {
-      console.error('Auth callback error:', error);
-      const redirectUrl = process.env.APPLICATION_STAGE === 'dev'
-        ? 'https://dev.petertconti.com'
-        : 'http://localhost:3000';
-      return res.redirect(`${redirectUrl}?error=auth_failed`);
-    }
+    return {
+      url: `${redirectUrl}?token=${access_token}`,
+      statusCode: 302
+    };
   }
 
   @Get('profile')
