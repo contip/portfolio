@@ -5,6 +5,8 @@ const apiUrl = '/api'
 const cats = ref<any[]>([])
 const loading = ref(false)
 const error = ref('')
+const token = ref<string | null>(null)
+const isAuthenticated = ref(false)
 
 const fetchCats = async () => {
   loading.value = true
@@ -23,7 +25,72 @@ const fetchCats = async () => {
   }
 }
 
+const createCat = async () => {
+  if (!isAuthenticated.value) {
+    error.value = 'You must be authenticated to create a cat!'
+    return
+  }
+
+  loading.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch(`${apiUrl}/cats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.value}`
+      },
+      body: JSON.stringify({
+        name: `Test Cat ${Date.now()}`,
+        age: Math.floor(Math.random() * 10) + 1,
+        breed: 'Test Breed'
+      })
+    })
+
+    if (response.ok) {
+      const newCat = await response.json()
+      cats.value.push(newCat)
+      error.value = ''
+    } else {
+      error.value = `Failed to create cat: ${response.status} - ${await response.text()}`
+    }
+  } catch (e) {
+    error.value = `Error creating cat: ${e}`
+  } finally {
+    loading.value = false
+  }
+}
+
+const checkAuth = () => {
+  // Check for token in URL params (from OAuth callback)
+  const urlParams = new URLSearchParams(window.location.search)
+  const tokenParam = urlParams.get('token')
+
+  if (tokenParam) {
+    localStorage.setItem('token', tokenParam)
+    token.value = tokenParam
+    isAuthenticated.value = true
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname)
+  } else {
+    // Check localStorage
+    const storedToken = localStorage.getItem('token')
+    if (storedToken) {
+      token.value = storedToken
+      isAuthenticated.value = true
+    }
+  }
+}
+
+const logout = () => {
+  localStorage.removeItem('token')
+  token.value = null
+  isAuthenticated.value = false
+}
+
 onMounted(() => {
+  checkAuth()
   fetchCats()
 })
 </script>
@@ -33,6 +100,17 @@ onMounted(() => {
     <header>
       <h1>Portfolio Dev Environment</h1>
       <p class="subtitle">NestJS API with Vue Frontend on AWS</p>
+
+      <div class="auth-status">
+        <div v-if="isAuthenticated" class="auth-info">
+          <span class="status-badge authenticated">✓ Authenticated</span>
+          <button @click="logout" class="btn-logout">Logout</button>
+        </div>
+        <div v-else class="auth-info">
+          <span class="status-badge unauthenticated">Not Authenticated</span>
+          <a href="/api/auth/google" class="btn-login">Login with Google</a>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -74,9 +152,14 @@ onMounted(() => {
 
       <section class="live-test">
         <h2>Live API Test</h2>
-        <button @click="fetchCats" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Fetch Cats' }}
-        </button>
+        <div class="button-group">
+          <button @click="fetchCats" :disabled="loading">
+            {{ loading ? 'Loading...' : 'Fetch Cats (Public)' }}
+          </button>
+          <button @click="createCat" :disabled="loading || !isAuthenticated" class="btn-create">
+            {{ loading ? 'Loading...' : 'Create Cat (Auth Required)' }}
+          </button>
+        </div>
 
         <div v-if="error" class="error">
           {{ error }}
@@ -279,5 +362,83 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+.auth-status {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.auth-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-badge.authenticated {
+  background: #27ae60;
+  color: white;
+}
+
+.status-badge.unauthenticated {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-login, .btn-logout {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-login {
+  background: #4285f4;
+  color: white;
+  border: none;
+}
+
+.btn-login:hover {
+  background: #357ae8;
+  text-decoration: none;
+}
+
+.btn-logout {
+  background: #95a5a6;
+  color: white;
+  border: none;
+}
+
+.btn-logout:hover {
+  background: #7f8c8d;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-create {
+  background: #27ae60;
+}
+
+.btn-create:hover:not(:disabled) {
+  background: #229954;
+}
+
+.btn-create:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
 }
 </style>

@@ -115,7 +115,9 @@ export default async (): Promise<AppConfig> => {
       clientSecret: googleClientSecret,
       callbackUrl: getEnvValue(
         'GOOGLE_CALLBACK_URL',
-        'http://localhost:3000/auth/google/callback',
+        applicationStage === 'dev'
+          ? 'https://dev.petertconti.com/api/auth/google/callback'
+          : 'http://localhost:3000/auth/google/callback',
       ),
     },
     auth: {
