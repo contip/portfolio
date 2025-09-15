@@ -1,22 +1,17 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { UserService } from './user.service';
 import { UserSchema } from './user.schema';
 
 @Module({
   imports: [
-    DynamooseModule.forFeatureAsync([
+    DynamooseModule.forFeature([
       {
         name: 'User',
-        useFactory: (configService: ConfigService) => ({
-          schema: UserSchema,
-          options: {
-            tableName: `users-${configService.get('applicationStage')}`,
-          },
-        }),
-        inject: [ConfigService],
-        imports: [ConfigModule],
+        schema: UserSchema,
+        options: {
+          tableName: `users-${process.env.APPLICATION_STAGE === 'production' ? 'prod' : 'dev'}`,
+        },
       },
     ]),
   ],
