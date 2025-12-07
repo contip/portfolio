@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
     inputs:
       skip_bootstrap_check:
-        description: 'Skip bootstrap verification (use with caution)'
+        description: "Skip bootstrap verification (use with caution)"
         required: false
         default: false
         type: boolean
 
 env:
   AWS_REGION: us-east-1
-  NODE_VERSION: '22'
-  TERRAFORM_VERSION: '1.6.0'
+  NODE_VERSION: "22"
+  TERRAFORM_VERSION: "1.6.0"
   ECR_REPOSITORY: portfolio-pconti-strapi
 
 concurrency:
@@ -157,8 +157,8 @@ jobs:
         with:
           # OpenNext officially supports Node 18/20; stick to 20.x for builds
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -184,6 +184,7 @@ jobs:
         with:
           name: opennext-build
           path: frontend/.open-next/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
 

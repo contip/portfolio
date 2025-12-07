@@ -71,4 +71,6 @@ Thumbs.db
 **/*_override.tf
 **/*_override.tf.json
 
+**/.open-next/
+
 CLAUDE.md
