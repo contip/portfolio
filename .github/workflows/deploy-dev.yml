@@ -1,60 +1,100 @@
-name: Deploy to Dev Environment
+name: Deploy to Dev
 
 on:
   push:
-    branches: [staging]
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      skip_bootstrap_check:
+        description: 'Skip bootstrap verification (use with caution)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   AWS_REGION: us-east-1
-  NODE_VERSION: "20"
-  ECR_REPOSITORY: portfolio-dev-lambda
+  NODE_VERSION: '22'
+  TERRAFORM_VERSION: '1.6.0'
+  ECR_REPOSITORY: portfolio-strapi
+
+concurrency:
+  group: deploy-dev-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  ##############################################################################
+  # Verify Bootstrap Resources
+  ##############################################################################
+  verify-bootstrap:
+    name: Verify Bootstrap
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_bootstrap_check != 'true' }}
     permissions:
       id-token: write
       contents: read
+    outputs:
+      ecr_repository_url: ${{ steps.verify.outputs.ecr_repository_url }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify bootstrap resources exist
+        id: verify
+        run: |
+          set -euo pipefail
+
+          echo "Verifying bootstrap resources..."
+
+          # Check S3 state bucket
+          if ! aws s3api head-bucket --bucket portfolio-pconti-tfstate 2>/dev/null; then
+            echo "::error::Terraform state bucket 'portfolio-pconti-tfstate' not found. Run bootstrap first."
+            exit 1
+          fi
+          echo "S3 state bucket: OK"
+
+          # Check DynamoDB lock table
+          if ! aws dynamodb describe-table --table-name portfolio-pconti-tf-lock >/dev/null 2>&1; then
+            echo "::error::DynamoDB lock table 'portfolio-pconti-tf-lock' not found. Run bootstrap first."
+            exit 1
+          fi
+          echo "DynamoDB lock table: OK"
+
+          # Check ECR repository
+          ECR_URL=$(aws ecr describe-repositories \
+            --repository-names ${{ env.ECR_REPOSITORY }} \
+            --query 'repositories[0].repositoryUri' \
+            --output text 2>/dev/null || echo "")
+
+          if [ -z "$ECR_URL" ] || [ "$ECR_URL" == "None" ]; then
+            echo "::error::ECR repository '${{ env.ECR_REPOSITORY }}' not found. Run bootstrap first."
+            exit 1
+          fi
+          echo "ECR repository: OK ($ECR_URL)"
+
+          echo "ecr_repository_url=$ECR_URL" >> "$GITHUB_OUTPUT"
+          echo "All bootstrap resources verified successfully"
+
+  ##############################################################################
+  # Build Backend (Strapi)
+  ##############################################################################
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: [verify-bootstrap]
+    if: ${{ always() && (needs.verify-bootstrap.result == 'success' || needs.verify-bootstrap.result == 'skipped') }}
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image_uri: ${{ steps.build-push.outputs.image_uri }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-          cache-dependency-path: "**/pnpm-lock.yaml"
-
-      # Backend build
-      - name: Install backend dependencies
-        working-directory: ./src/backend
-        run: pnpm install --frozen-lockfile
-
-      - name: Run backend tests
-        working-directory: ./src/backend
-        run: pnpm test
-
-      - name: Build backend
-        working-directory: ./src/backend
-        run: pnpm build
-
-      # Frontend build
-      - name: Install frontend dependencies
-        working-directory: ./src/frontend
-        run: pnpm install --frozen-lockfile
-
-      - name: Build frontend
-        working-directory: ./src/frontend
-        run: pnpm build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -68,147 +108,318 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64
 
       - name: Build and push Docker image
-        working-directory: ./src/backend
+        id: build-push
+        working-directory: ./backend
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          # Build ARM64 image without provenance
-          echo "🔨 Building Docker image for ARM64..."
+          IMAGE_URI="${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
+
+          echo "Building Strapi image for linux/amd64..."
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             --provenance=false \
-            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
-            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            -t "${IMAGE_URI}" \
+            -t "${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:latest" \
             --push \
             .
 
-          echo "✅ Image pushed to ECR:"
-          echo "   ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-          echo "   ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+          echo "Image pushed: ${IMAGE_URI}"
 
-          # Store image URI for Terraform
-          echo "LAMBDA_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+  ##############################################################################
+  # Build Frontend (Next.js with OpenNext)
+  ##############################################################################
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [verify-bootstrap]
+    if: ${{ always() && (needs.verify-bootstrap.result == 'success' || needs.verify-bootstrap.result == 'skipped') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js with OpenNext
+        working-directory: ./frontend
+        run: |
+          set -euo pipefail
+
+          echo "Building Next.js application..."
+          pnpm build
+
+          echo "Building OpenNext package for AWS Lambda..."
+          npx --yes @opennextjs/aws build
+
+          echo "OpenNext build complete"
+          ls -la .open-next/
+
+      - name: Upload OpenNext build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opennext-build
+          path: frontend/.open-next
+          retention-days: 1
+
+  ##############################################################################
+  # Deploy Infrastructure (Terraform)
+  ##############################################################################
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      frontend_url: ${{ steps.outputs.outputs.frontend_url }}
+      api_url: ${{ steps.outputs.outputs.api_url }}
+      cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
+      ecs_cluster: ${{ steps.outputs.outputs.ecs_cluster }}
+      ecs_service: ${{ steps.outputs.outputs.ecs_service }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download OpenNext build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opennext-build
+          path: frontend/.open-next
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.6.0"
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
 
-      - name: Create terraform.tfvars file
-        working-directory: ./src/infra/environments/dev
-        shell: bash
+      - name: Create terraform.tfvars
+        working-directory: ./infra
         run: |
           set -euo pipefail
-          # Decode the entire tfvars from a base64 secret
+
+          # Decode tfvars from base64 secret
           printf '%s' "${{ secrets.TFVARS_CONTENT_DEV_B64 }}" | base64 -d > terraform.tfvars
 
-          # Normalize CRLF -> LF just in case
+          # Normalize line endings
           tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
 
-          echo "Wrote terraform.tfvars ($(wc -c < terraform.tfvars) bytes)"
+          # Append/override the strapi_image variable
+          echo "" >> terraform.tfvars
+          echo "strapi_image = \"${{ needs.build-backend.outputs.image_uri }}\"" >> terraform.tfvars
+
+          echo "terraform.tfvars created ($(wc -l < terraform.tfvars) lines)"
 
       - name: Terraform Init
-        working-directory: ./src/infra/environments/dev
-        run: terraform init
+        working-directory: ./infra
+        run: terraform init -input=false
 
-      - name: Terraform Plan with new container
-        working-directory: ./src/infra/environments/dev
+      - name: Terraform Validate
+        working-directory: ./infra
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ./infra
         run: |
           terraform plan \
-            -var="lambda_image_uri=${{ env.LAMBDA_IMAGE_URI }}" \
             -var-file=terraform.tfvars \
-            -out=tfplan
-
-          echo "📋 Terraform will update Lambda with new container image:"
-          echo "   ${{ env.LAMBDA_IMAGE_URI }}"
+            -out=tfplan \
+            -input=false
 
       - name: Terraform Apply
-        working-directory: ./src/infra/environments/dev
+        working-directory: ./infra
+        run: terraform apply -auto-approve -input=false tfplan
+
+      - name: Get Terraform outputs
+        id: outputs
+        working-directory: ./infra
         run: |
-          terraform apply -auto-approve tfplan
-          echo "✅ Terraform apply completed - Lambda updated with new container!"
+          echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
+          echo "api_url=$(terraform output -raw strapi_url)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
+          echo "ecs_service=$(terraform output -raw ecs_service_name)" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy frontend to S3
+  ##############################################################################
+  # Wait for ECS Service Stability
+  ##############################################################################
+  wait-for-ecs:
+    name: Wait for ECS Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Wait for ECS service stability
         run: |
-          echo "🚀 Deploying frontend to S3..."
-          aws s3 sync ./src/frontend/dist s3://dev.petertconti.com/ \
-            --delete \
-            --cache-control "public, max-age=3600" \
-            --exclude "*.html" \
-            --no-cli-pager
+          set -euo pipefail
 
-          # HTML files with shorter cache
-          aws s3 sync ./src/frontend/dist s3://dev.petertconti.com/ \
-            --delete \
-            --cache-control "public, max-age=300" \
-            --exclude "*" \
-            --include "*.html" \
-            --content-type "text/html" \
-            --no-cli-pager
+          echo "Waiting for ECS service to stabilize..."
 
-          echo "✅ Frontend deployed to S3!"
+          aws ecs wait services-stable \
+            --cluster "${{ needs.deploy-infrastructure.outputs.ecs_cluster }}" \
+            --services "${{ needs.deploy-infrastructure.outputs.ecs_service }}" \
+            --region ${{ env.AWS_REGION }}
+
+          echo "ECS service is stable"
+
+  ##############################################################################
+  # Invalidate CloudFront Cache
+  ##############################################################################
+  invalidate-cache:
+    name: Invalidate CloudFront
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, wait-for-ecs]
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Invalidate CloudFront cache
         run: |
-          echo "🔄 Invalidating CloudFront cache..."
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?contains(Aliases.Items, 'dev.petertconti.com')].Id" \
-            --output text)
+          set -euo pipefail
 
-          if [ -n "$DISTRIBUTION_ID" ]; then
-            aws cloudfront create-invalidation \
-              --distribution-id $DISTRIBUTION_ID \
+          DISTRIBUTION_ID="${{ needs.deploy-infrastructure.outputs.cloudfront_distribution_id }}"
+
+          if [ -n "$DISTRIBUTION_ID" ] && [ "$DISTRIBUTION_ID" != "None" ]; then
+            echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+
+            INVALIDATION_ID=$(aws cloudfront create-invalidation \
+              --distribution-id "$DISTRIBUTION_ID" \
               --paths "/*" \
-              --no-cli-pager
-            echo "✅ CloudFront cache invalidated for distribution $DISTRIBUTION_ID"
+              --query 'Invalidation.Id' \
+              --output text)
+
+            echo "Invalidation created: $INVALIDATION_ID"
           else
-            echo "⚠️ No CloudFront distribution found for dev.petertconti.com"
+            echo "No CloudFront distribution ID found, skipping invalidation"
           fi
 
-      - name: Wait for Lambda to become active
+  ##############################################################################
+  # Health Checks
+  ##############################################################################
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, wait-for-ecs, invalidate-cache]
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 30
+
+      - name: Check frontend health
         run: |
-          aws lambda wait function-updated \
-            --function-name portfolio-dev-api \
-            --region ${{ env.AWS_REGION }} || true
+          set -euo pipefail
 
-      - name: Test API endpoint
-        run: |
-          echo "⏳ Waiting for Lambda cold start..."
-          sleep 30
+          FRONTEND_URL="${{ needs.deploy-infrastructure.outputs.frontend_url }}"
+          echo "Testing frontend: $FRONTEND_URL"
 
-          echo "🧪 Testing API endpoints..."
+          for i in {1..5}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$FRONTEND_URL" || echo "000")
 
-          # Test cats endpoint
-          echo "Testing /api/cats..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://dev.petertconti.com/api/cats)
-          if [ "$response" -eq 200 ]; then
-            echo "✅ Cats API test passed (HTTP $response)"
-          else
-            echo "⚠️ Cats API returned HTTP $response"
+            if [ "$HTTP_CODE" -eq 200 ]; then
+              echo "Frontend health check passed (HTTP $HTTP_CODE)"
+              break
+            fi
+
+            echo "Attempt $i: HTTP $HTTP_CODE, retrying in 10s..."
+            sleep 10
+          done
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::warning::Frontend returned HTTP $HTTP_CODE"
           fi
 
-          # Test auth endpoint
-          echo "Testing /api/auth..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://dev.petertconti.com/api/auth)
-          if [ "$response" -eq 200 ] || [ "$response" -eq 401 ]; then
-            echo "✅ Auth API test passed (HTTP $response)"
-          else
-            echo "⚠️ Auth API returned HTTP $response"
+      - name: Check API health
+        run: |
+          set -euo pipefail
+
+          API_URL="${{ needs.deploy-infrastructure.outputs.api_url }}"
+          HEALTH_URL="${API_URL}/_health"
+          echo "Testing API health: $HEALTH_URL"
+
+          for i in {1..5}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$HEALTH_URL" || echo "000")
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 204 ]; then
+              echo "API health check passed (HTTP $HTTP_CODE)"
+              break
+            fi
+
+            echo "Attempt $i: HTTP $HTTP_CODE, retrying in 10s..."
+            sleep 10
+          done
+
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 204 ]; then
+            echo "::warning::API health check returned HTTP $HTTP_CODE"
           fi
 
-      - name: Deployment Summary
+  ##############################################################################
+  # Deployment Summary
+  ##############################################################################
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [build-backend, deploy-infrastructure, health-check]
+    if: always()
+
+    steps:
+      - name: Print deployment summary
         run: |
-          echo "🚀 Deployment completed successfully!"
-          echo "📦 Backend container: ${{ env.LAMBDA_IMAGE_URI }}"
-          echo "🌐 Frontend URL: https://dev.petertconti.com"
-          echo "📍 API URL: https://dev.petertconti.com/api"
-          echo "🐱 Cats endpoint: https://dev.petertconti.com/api/cats"
-          echo "🔐 Auth endpoint: https://dev.petertconti.com/api/auth/google"
-          echo "✅ Full stack deployed: Vue frontend (S3) + NestJS backend (Lambda) + CloudFront CDN!"
+          echo "=============================================="
+          echo "         DEPLOYMENT SUMMARY"
+          echo "=============================================="
+          echo ""
+          echo "Commit:     ${{ github.sha }}"
+          echo "Branch:     ${{ github.ref_name }}"
+          echo "Actor:      ${{ github.actor }}"
+          echo ""
+          echo "Frontend:   ${{ needs.deploy-infrastructure.outputs.frontend_url }}"
+          echo "API:        ${{ needs.deploy-infrastructure.outputs.api_url }}"
+          echo "Container:  ${{ needs.build-backend.outputs.image_uri }}"
+          echo ""
+          echo "=============================================="

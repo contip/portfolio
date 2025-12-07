@@ -1,0 +1,39 @@
+services:
+  portfolio-db:
+    image: postgres
+    container_name: portfolio-db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - portfolio-db-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - backend
+  portfolio-pgadmin:
+    links:
+      - portfolio-db
+    image: dpage/pgadmin4:latest
+    container_name: portfolio-pgadmin
+    restart: unless-stopped
+    volumes:
+      - portfolio-pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_ACCESS_PORT}:80"
+    env_file:
+      - .env
+    networks:
+      - backend
+      - frontend
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
+
+volumes:
+  portfolio-db-data:
+    driver: local
+  portfolio-pgadmin:
+    driver: local

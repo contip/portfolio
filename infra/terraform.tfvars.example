@@ -1,0 +1,29 @@
+# Portfolio Infrastructure Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# Required: Your domain name
+domain_name = "portfolio.example.com"
+
+# Required: Route53 hosted zone ID for the domain
+# If using subdomain delegation, create a hosted zone for your subdomain first
+hosted_zone_id = "Z1234567890ABC"
+
+# Required: ECR image URI for Strapi
+# Example: 123456789012.dkr.ecr.us-east-1.amazonaws.com/portfolio-strapi:latest
+strapi_image = ""
+
+# Optional: Project name (used for resource naming)
+# project = "portfolio"
+
+# Optional: AWS region
+# aws_region = "us-east-1"
+
+# Optional: Strapi container resources
+# strapi_cpu    = 512
+# strapi_memory = 1024
+
+# Optional: Path to OpenNext build output
+# open_next_build_path = "../frontend/.open-next"
+
+# Optional: CIDR blocks for direct database access (bastion/VPN)
+# bastion_cidr_blocks = ["10.0.0.0/8"]
