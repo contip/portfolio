@@ -155,7 +155,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          # OpenNext officially supports Node 18/20; stick to 20.x for builds
+          node-version: 20
           cache: 'pnpm'
           cache-dependency-path: 'frontend/pnpm-lock.yaml'
 
@@ -176,12 +177,14 @@ jobs:
 
           echo "OpenNext build complete"
           ls -la .open-next/
+          test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
 
       - name: Upload OpenNext build artifact
         uses: actions/upload-artifact@v4
         with:
           name: opennext-build
-          path: frontend/.open-next
+          path: frontend/.open-next/**
+          if-no-files-found: error
           retention-days: 1
 
   ##############################################################################
