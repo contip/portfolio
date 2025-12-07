@@ -172,7 +172,7 @@ jobs:
           pnpm build
 
           echo "Building OpenNext package for AWS Lambda..."
-          npx --yes @opennextjs/aws build
+          pnpm dlx @opennextjs/aws build
 
           echo "OpenNext build complete"
           ls -la .open-next/

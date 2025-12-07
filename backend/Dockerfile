@@ -18,21 +18,23 @@ RUN apk update && apk add --no-cache \
     git \
     > /dev/null 2>&1
 
-WORKDIR /opt
+WORKDIR /opt/app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy package files
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* ./
 
-# Install pnpm and dependencies
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy application code
-WORKDIR /opt/app
 COPY . .
 
 # Set production environment for build
 ENV NODE_ENV=production
+ENV PATH=/opt/app/node_modules/.bin:$PATH
 
 # Build Strapi admin panel
 RUN pnpm build
@@ -50,17 +52,16 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=1337
 
-WORKDIR /opt
-
-# Copy node_modules from build stage
-COPY --from=build /opt/node_modules ./node_modules
-
-# Copy built application
 WORKDIR /opt/app
+
+# Install pnpm for runtime
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy node_modules and built application from build stage
 COPY --from=build /opt/app ./
 
 # Add node_modules/.bin to PATH
-ENV PATH=/opt/node_modules/.bin:$PATH
+ENV PATH=/opt/app/node_modules/.bin:$PATH
 
 # Create non-root user for security
 RUN chown -R node:node /opt/app
