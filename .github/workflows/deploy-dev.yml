@@ -15,7 +15,7 @@ env:
   AWS_REGION: us-east-1
   NODE_VERSION: '22'
   TERRAFORM_VERSION: '1.6.0'
-  ECR_REPOSITORY: portfolio-strapi
+  ECR_REPOSITORY: portfolio-pconti-strapi
 
 concurrency:
   group: deploy-dev-${{ github.ref }}
