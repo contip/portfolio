@@ -310,6 +310,7 @@ module "ecs_strapi" {
     { name = "DATABASE_NAME", value = "portfolio" },
     { name = "DATABASE_USERNAME", value = "strapi" },
     { name = "DATABASE_SSL", value = "true" },
+    { name = "DATABASE_SSL_REJECT_UNAUTHORIZED", value = "false" }, # AWS RDS uses managed certs
     { name = "APP_URL", value = "https://api.${var.domain_name}" },
   ]
 
