@@ -173,10 +173,18 @@ jobs:
           pnpm build
 
           echo "Building OpenNext package for AWS Lambda..."
-          pnpm dlx @opennextjs/aws build
+          pnpm dlx @opennextjs/aws@3.9.4 build
 
           echo "OpenNext build complete"
           ls -la .open-next/
+
+          # Fail if any symlinks remain (they break Lambda)
+          if find .open-next -type l | head -1 | read; then
+            echo "::error::Symlinks found in .open-next - Lambda deployment will fail"
+            find .open-next -type l
+            exit 1
+          fi
+
           test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
 
       - name: Upload OpenNext build artifact

@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@swc/helpers':
-        specifier: ^0.5.15
-        version: 0.5.15
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -29,9 +26,6 @@ importers:
       react-dom:
         specifier: 19.2.0
         version: 19.2.0(react@19.2.0)
-      styled-jsx:
-        specifier: ^5.1.6
-        version: 5.1.6(@babel/core@7.28.5)(react@19.2.0)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
