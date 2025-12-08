@@ -28,3 +28,14 @@ output "secrets_access_policy_arn" {
   description = "ARN of the IAM policy for secrets access"
   value       = aws_iam_policy.secrets_access.arn
 }
+
+output "frontend_secret_arn" {
+  description = "ARN of the frontend secret"
+  value       = aws_secretsmanager_secret.frontend.arn
+}
+
+output "strapi_api_token" {
+  description = "Strapi API token for frontend"
+  value       = var.strapi_api_token
+  sensitive   = true
+}

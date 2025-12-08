@@ -56,3 +56,10 @@ variable "bastion_cidr_blocks" {
   type        = list(string)
   default     = []
 }
+
+variable "strapi_api_token" {
+  description = "Strapi API token for frontend access (created in Strapi admin UI, leave empty initially)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

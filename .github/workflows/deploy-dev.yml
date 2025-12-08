@@ -166,6 +166,9 @@ jobs:
 
       - name: Build Next.js with OpenNext
         working-directory: ./frontend
+        env:
+          # NEXT_PUBLIC_* vars must be set at build time (baked into JS bundle)
+          NEXT_PUBLIC_STRAPI_URL: https://api.${{ secrets.DOMAIN_NAME }}
         run: |
           set -euo pipefail
 

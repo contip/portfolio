@@ -94,6 +94,25 @@ resource "aws_secretsmanager_secret_version" "strapi" {
 }
 
 ################################################################################
+# Frontend Secrets (for Next.js Lambda)
+################################################################################
+
+resource "aws_secretsmanager_secret" "frontend" {
+  name                    = "${var.name}/frontend"
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "frontend" {
+  secret_id = aws_secretsmanager_secret.frontend.id
+
+  secret_string = jsonencode({
+    STRAPI_API_TOKEN = var.strapi_api_token
+  })
+}
+
+################################################################################
 # IAM Policy for Secret Access
 ################################################################################
 
@@ -106,7 +125,8 @@ data "aws_iam_policy_document" "secrets_access" {
     ]
     resources = [
       aws_secretsmanager_secret.database.arn,
-      aws_secretsmanager_secret.strapi.arn
+      aws_secretsmanager_secret.strapi.arn,
+      aws_secretsmanager_secret.frontend.arn
     ]
   }
 }

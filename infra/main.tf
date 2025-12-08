@@ -206,9 +206,10 @@ resource "aws_security_group" "database" {
 module "secrets" {
   source = "./modules/secrets"
 
-  name          = local.name
-  database_host = module.rds.address
-  database_port = local.db_port
+  name             = local.name
+  database_host    = module.rds.address
+  database_port    = local.db_port
+  strapi_api_token = var.strapi_api_token
 
   tags = local.tags
 }
@@ -377,6 +378,16 @@ module "opennext" {
   # CloudFront distribution settings
   distribution = {
     price_class = "PriceClass_100" # US, Canada, Europe only
+  }
+
+  # Server function configuration with environment variables for Strapi
+  # Note: NEXT_PUBLIC_* vars are baked in at build time, not runtime.
+  # Only server-side vars (like STRAPI_API_TOKEN) need to be passed here.
+  server_function = {
+    additional_environment_variables = {
+      STRAPI_URL       = "https://api.${var.domain_name}"
+      STRAPI_API_TOKEN = var.strapi_api_token
+    }
   }
 
   # Provider configuration - OpenNext requires multiple provider aliases

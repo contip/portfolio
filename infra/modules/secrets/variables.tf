@@ -32,6 +32,13 @@ variable "recovery_window_in_days" {
   default     = 0
 }
 
+variable "strapi_api_token" {
+  description = "Strapi API token for frontend access (created in Strapi admin UI)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
