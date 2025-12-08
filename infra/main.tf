@@ -354,8 +354,9 @@ module "opennext" {
   source  = "RJPearson94/open-next/aws//modules/tf-aws-open-next-zone"
   version = "3.6.2"
 
-  prefix      = replace(var.domain_name, ".", "-")
-  folder_path = var.open_next_build_path
+  prefix            = replace(var.domain_name, ".", "-")
+  folder_path       = var.open_next_build_path
+  open_next_version = "v3.x.x"
 
   # Custom domain configuration
   # Note: Not passing hosted_zone id due to a bug in the module (coalesce evaluates
