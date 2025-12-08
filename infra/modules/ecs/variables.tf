@@ -87,6 +87,12 @@ variable "secrets_policy_arn" {
   default     = null
 }
 
+variable "attach_secrets_policy" {
+  description = "Whether to attach secrets policy. Use this instead of checking secrets_policy_arn to avoid count dependency issues"
+  type        = bool
+  default     = false
+}
+
 variable "container_insights" {
   description = "Enable CloudWatch Container Insights"
   type        = bool

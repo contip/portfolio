@@ -30,6 +30,12 @@ variable "certificate_arn" {
   default     = null
 }
 
+variable "enable_https" {
+  description = "Whether to create HTTPS listener. Use this instead of checking certificate_arn to avoid count dependency issues"
+  type        = bool
+  default     = false
+}
+
 variable "ssl_policy" {
   description = "SSL policy for HTTPS listener"
   type        = string

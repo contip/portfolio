@@ -270,6 +270,7 @@ module "alb" {
 
   target_port       = local.strapi_port
   certificate_arn   = module.acm.certificate_arn
+  enable_https      = true
   health_check_path = "/_health"
 
   tags = local.tags
@@ -296,7 +297,8 @@ module "ecs_strapi" {
   security_group_ids = [aws_security_group.ecs.id]
   target_group_arn   = module.alb.target_group_arn
 
-  secrets_policy_arn = module.secrets.secrets_access_policy_arn
+  secrets_policy_arn    = module.secrets.secrets_access_policy_arn
+  attach_secrets_policy = true
 
   environment_variables = [
     { name = "NODE_ENV", value = "production" },
@@ -356,11 +358,13 @@ module "opennext" {
   folder_path = var.open_next_build_path
 
   # Custom domain configuration
+  # Note: Not passing hosted_zone id due to a bug in the module (coalesce evaluates
+  # all arguments causing Invalid index error). The module will look up the zone by name.
   domain_config = {
     include_www = true
     hosted_zones = [{
-      name = var.domain_name
-      id   = var.hosted_zone_id
+      name         = var.domain_name
+      private_zone = false
     }]
   }
 
