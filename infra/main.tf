@@ -250,7 +250,7 @@ module "acm" {
   }
 
   domain_name               = var.domain_name
-  subject_alternative_names = ["api.${var.domain_name}"]
+  subject_alternative_names = ["api.${var.domain_name}", "www.${var.domain_name}"]
   hosted_zone_id            = var.hosted_zone_id
 
   tags = local.tags
@@ -367,6 +367,10 @@ module "opennext" {
       name         = var.domain_name
       private_zone = false
     }]
+    # Use our ACM certificate (required since Route53 is in a different account)
+    viewer_certificate = {
+      acm_certificate_arn = module.acm.certificate_arn
+    }
   }
 
   # CloudFront distribution settings
