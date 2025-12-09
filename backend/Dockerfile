@@ -1,78 +1,71 @@
-# Production Dockerfile for Strapi CMS
-# Multi-stage build for optimized image size
+# To use this Dockerfile, you have to set `output: 'standalone'` in your next.config.mjs file.
+# From https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
 
-################################################################################
-# Stage 1: Build
-################################################################################
-FROM node:22-alpine AS build
+FROM node:22.17.0-alpine AS base
 
-# Install build dependencies
-RUN apk update && apk add --no-cache \
-    build-base \
-    gcc \
-    autoconf \
-    automake \
-    zlib-dev \
-    libpng-dev \
-    vips-dev \
-    git \
-    > /dev/null 2>&1
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
-WORKDIR /opt/app
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy application code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set production environment for build
-ENV NODE_ENV=production
-ENV PATH=/opt/app/node_modules/.bin:$PATH
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+# ENV NEXT_TELEMETRY_DISABLED 1
 
-# Build Strapi admin panel
-RUN pnpm build
+RUN \
+  if [ -f yarn.lock ]; then yarn run build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-################################################################################
-# Stage 2: Production
-################################################################################
-FROM node:22-alpine AS production
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
 
-# Install runtime dependencies only
-RUN apk add --no-cache vips-dev
+ENV NODE_ENV production
+# Uncomment the following line in case you want to disable telemetry during runtime.
+# ENV NEXT_TELEMETRY_DISABLED 1
 
-# Set environment
-ENV NODE_ENV=production
-ENV HOST=0.0.0.0
-ENV PORT=1337
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-WORKDIR /opt/app
+# Remove this line if you do not have this folder
+COPY --from=builder /app/public ./public
 
-# Install pnpm for runtime
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
-# Copy node_modules and built application from build stage
-COPY --from=build /opt/app ./
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Add node_modules/.bin to PATH
-ENV PATH=/opt/app/node_modules/.bin:$PATH
+USER nextjs
 
-# Create non-root user for security
-RUN chown -R node:node /opt/app
-USER node
+EXPOSE 3000
 
-# Expose Strapi port
-EXPOSE 1337
+ENV PORT 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:1337/_health || exit 1
-
-# Start Strapi
-CMD ["pnpm", "start"]
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD HOSTNAME="0.0.0.0" node server.js

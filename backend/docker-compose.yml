@@ -1,18 +1,20 @@
 services:
   portfolio-db:
-    image: postgres
+    image: postgres:17-alpine
     container_name: portfolio-db
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - '${POSTGRES_PORT:-5999}:5432'
     volumes:
       - portfolio-db-data:/var/lib/postgresql/data
-    env_file:
-      - .env
-    networks:
-      - backend
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-payload}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5999}
+
   portfolio-pgadmin:
-    links:
+    depends_on:
       - portfolio-db
     image: dpage/pgadmin4:latest
     container_name: portfolio-pgadmin
@@ -20,17 +22,10 @@ services:
     volumes:
       - portfolio-pgadmin:/var/lib/pgadmin
     ports:
-      - "${PGADMIN_ACCESS_PORT}:80"
-    env_file:
-      - .env
-    networks:
-      - backend
-      - frontend
-networks:
-  backend:
-    external: true
-  frontend:
-    external: true
+      - '${PGADMIN_ACCESS_PORT:-5050}:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
 
 volumes:
   portfolio-db-data:

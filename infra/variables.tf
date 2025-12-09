@@ -12,11 +12,6 @@ variable "hosted_zone_id" {
   type        = string
 }
 
-variable "strapi_image" {
-  description = "ECR image URI for the Strapi container"
-  type        = string
-}
-
 ################################################################################
 # Optional Variables
 ################################################################################
@@ -33,33 +28,20 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "strapi_cpu" {
-  description = "CPU units for Strapi task (256, 512, 1024, 2048, 4096)"
-  type        = number
-  default     = 512
-}
-
-variable "strapi_memory" {
-  description = "Memory in MiB for Strapi task"
-  type        = number
-  default     = 1024
-}
-
-variable "open_next_build_path" {
-  description = "Path to the OpenNext build output directory"
+variable "open_next_frontend_build_path" {
+  description = "Path to the OpenNext build output directory for frontend"
   type        = string
   default     = "../frontend/.open-next"
+}
+
+variable "open_next_backend_build_path" {
+  description = "Path to the OpenNext build output directory for Payload backend"
+  type        = string
+  default     = "../backend/.open-next"
 }
 
 variable "bastion_cidr_blocks" {
   description = "CIDR blocks allowed to access the database directly (for bastion/VPN)"
   type        = list(string)
   default     = []
-}
-
-variable "strapi_api_token" {
-  description = "Strapi API token for frontend access (created in Strapi admin UI, leave empty initially)"
-  type        = string
-  default     = ""
-  sensitive   = true
 }

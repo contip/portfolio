@@ -3,7 +3,7 @@
 #
 # Architecture:
 # - Next.js frontend on AWS Lambda via OpenNext
-# - Strapi CMS on ECS Fargate with ALB
+# - Payload CMS on AWS Lambda via OpenNext
 # - PostgreSQL on RDS (t4g.micro, free tier)
 # - Secrets managed via AWS Secrets Manager
 ################################################################################
@@ -74,8 +74,11 @@ locals {
   azs                   = ["${local.region}a", "${local.region}b"]
 
   # Application ports
-  strapi_port = 1337
-  db_port     = 5432
+  db_port = 5432
+
+  # Database configuration
+  db_name     = "portfolio"
+  db_username = "payload"
 
   tags = {
     Project   = var.project
@@ -110,26 +113,10 @@ module "vpc" {
 # Security Groups
 ################################################################################
 
-resource "aws_security_group" "alb" {
-  name        = "${local.name}-alb-sg"
-  description = "Security group for ALB"
+resource "aws_security_group" "lambda" {
+  name        = "${local.name}-lambda-sg"
+  description = "Security group for Lambda functions"
   vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   egress {
     from_port   = 0
@@ -138,30 +125,7 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${local.name}-alb-sg" }
-}
-
-resource "aws_security_group" "ecs" {
-  name        = "${local.name}-ecs-sg"
-  description = "Security group for ECS tasks"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    description     = "From ALB"
-    from_port       = local.strapi_port
-    to_port         = local.strapi_port
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = { Name = "${local.name}-ecs-sg" }
+  tags = { Name = "${local.name}-lambda-sg" }
 }
 
 resource "aws_security_group" "database" {
@@ -169,12 +133,13 @@ resource "aws_security_group" "database" {
   description = "Security group for RDS"
   vpc_id      = module.vpc.vpc_id
 
+  # Lambda functions in VPC need access
   ingress {
-    description     = "PostgreSQL from ECS"
+    description     = "PostgreSQL from Lambda"
     from_port       = local.db_port
     to_port         = local.db_port
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs.id]
+    security_groups = [aws_security_group.lambda.id]
   }
 
   # Bastion access (optional)
@@ -206,10 +171,9 @@ resource "aws_security_group" "database" {
 module "secrets" {
   source = "./modules/secrets"
 
-  name             = local.name
-  database_host    = module.rds.address
-  database_port    = local.db_port
-  strapi_api_token = var.strapi_api_token
+  name          = local.name
+  database_host = module.rds.address
+  database_port = local.db_port
 
   tags = local.tags
 }
@@ -221,8 +185,8 @@ module "rds" {
   db_subnet_group_name = module.vpc.database_subnet_group_name
   security_group_ids   = [aws_security_group.database.id]
 
-  database_name     = "portfolio"
-  database_username = "strapi"
+  database_name     = local.db_name
+  database_username = local.db_username
   database_password = module.secrets.database_password
 
   # Free tier configuration
@@ -258,118 +222,27 @@ module "acm" {
 }
 
 ################################################################################
-# Load Balancer (for Strapi)
-################################################################################
-
-module "alb" {
-  source = "./modules/alb"
-
-  name               = "${local.name}-strapi"
-  vpc_id             = module.vpc.vpc_id
-  subnet_ids         = module.vpc.public_subnet_ids
-  security_group_ids = [aws_security_group.alb.id]
-
-  target_port       = local.strapi_port
-  certificate_arn   = module.acm.certificate_arn
-  enable_https      = true
-  health_check_path = "/_health"
-
-  tags = local.tags
-}
-
-################################################################################
-# ECS (Strapi)
-################################################################################
-
-module "ecs_strapi" {
-  source = "./modules/ecs"
-
-  name       = "${local.name}-strapi"
-  aws_region = local.region
-
-  container_name  = "strapi"
-  container_image = var.strapi_image
-  container_port  = local.strapi_port
-
-  cpu    = var.strapi_cpu
-  memory = var.strapi_memory
-
-  subnet_ids         = module.vpc.private_subnet_ids
-  security_group_ids = [aws_security_group.ecs.id]
-  target_group_arn   = module.alb.target_group_arn
-
-  secrets_policy_arn    = module.secrets.secrets_access_policy_arn
-  attach_secrets_policy = true
-
-  environment_variables = [
-    { name = "NODE_ENV", value = "production" },
-    { name = "HOST", value = "0.0.0.0" },
-    { name = "PORT", value = tostring(local.strapi_port) },
-    { name = "DATABASE_CLIENT", value = "postgres" },
-    { name = "DATABASE_HOST", value = module.rds.address },
-    { name = "DATABASE_PORT", value = tostring(local.db_port) },
-    { name = "DATABASE_NAME", value = "portfolio" },
-    { name = "DATABASE_USERNAME", value = "strapi" },
-    { name = "DATABASE_SSL", value = "true" },
-    { name = "DATABASE_SSL_REJECT_UNAUTHORIZED", value = "false" }, # AWS RDS uses managed certs
-    { name = "APP_URL", value = "https://api.${var.domain_name}" },
-  ]
-
-  secrets = [
-    { name = "DATABASE_PASSWORD", valueFrom = "${module.secrets.database_secret_arn}:password::" },
-    { name = "APP_KEYS", valueFrom = "${module.secrets.strapi_secret_arn}:APP_KEYS::" },
-    { name = "API_TOKEN_SALT", valueFrom = "${module.secrets.strapi_secret_arn}:API_TOKEN_SALT::" },
-    { name = "ADMIN_JWT_SECRET", valueFrom = "${module.secrets.strapi_secret_arn}:ADMIN_JWT_SECRET::" },
-    { name = "TRANSFER_TOKEN_SALT", valueFrom = "${module.secrets.strapi_secret_arn}:TRANSFER_TOKEN_SALT::" },
-    { name = "JWT_SECRET", valueFrom = "${module.secrets.strapi_secret_arn}:JWT_SECRET::" },
-  ]
-
-  tags = local.tags
-}
-
-################################################################################
-# Route53 Records
-################################################################################
-
-resource "aws_route53_record" "api" {
-  provider = aws.route53
-
-  zone_id = var.hosted_zone_id
-  name    = "api.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = module.alb.dns_name
-    zone_id                = module.alb.zone_id
-    evaluate_target_health = true
-  }
-}
-
-################################################################################
-# OpenNext (Next.js on Lambda)
+# OpenNext - Frontend (Next.js on Lambda)
 #
 # Uses the tf-aws-open-next-zone submodule for single-zone deployment.
 # Requires .open-next build output from: npx @opennextjs/aws build
 ################################################################################
 
-module "opennext" {
+module "opennext_frontend" {
   source  = "RJPearson94/open-next/aws//modules/tf-aws-open-next-zone"
   version = "3.6.2"
 
-  prefix            = replace(var.domain_name, ".", "-")
-  folder_path       = var.open_next_build_path
+  prefix            = "${replace(var.domain_name, ".", "-")}-frontend"
+  folder_path       = var.open_next_frontend_build_path
   open_next_version = "v3.x.x"
 
   # Custom domain configuration
-  # Note: Not passing hosted_zone id due to a bug in the module (coalesce evaluates
-  # all arguments causing Invalid index error). The module will look up the zone by name.
   domain_config = {
     include_www = true
     hosted_zones = [{
       name         = var.domain_name
       private_zone = false
     }]
-    # Use our ACM certificate (required since Route53 is in a different account)
     viewer_certificate = {
       acm_certificate_arn = module.acm.certificate_arn
     }
@@ -380,13 +253,66 @@ module "opennext" {
     price_class = "PriceClass_100" # US, Canada, Europe only
   }
 
-  # Server function configuration with environment variables for Strapi
+  # Server function configuration with environment variables for Payload API
   # Note: NEXT_PUBLIC_* vars are baked in at build time, not runtime.
-  # Only server-side vars (like STRAPI_API_TOKEN) need to be passed here.
   server_function = {
     additional_environment_variables = {
-      STRAPI_URL       = "https://api.${var.domain_name}"
-      STRAPI_API_TOKEN = var.strapi_api_token
+      PAYLOAD_API_URL = "https://api.${var.domain_name}"
+    }
+  }
+
+  # Provider configuration - OpenNext requires multiple provider aliases
+  providers = {
+    aws                 = aws
+    aws.global          = aws.global
+    aws.iam             = aws
+    aws.dns             = aws.route53
+    aws.server_function = aws
+  }
+}
+
+################################################################################
+# OpenNext - Payload CMS Backend (Next.js on Lambda)
+#
+# Payload CMS running as a headless API on api.${domain_name}
+################################################################################
+
+module "opennext_backend" {
+  source  = "RJPearson94/open-next/aws//modules/tf-aws-open-next-zone"
+  version = "3.6.2"
+
+  prefix            = "${replace(var.domain_name, ".", "-")}-backend"
+  folder_path       = var.open_next_backend_build_path
+  open_next_version = "v3.x.x"
+
+  # Custom domain configuration for API subdomain
+  domain_config = {
+    include_www = false
+    sub_domain  = "api"
+    hosted_zones = [{
+      name         = var.domain_name
+      private_zone = false
+    }]
+    viewer_certificate = {
+      acm_certificate_arn = module.acm.certificate_arn
+    }
+  }
+
+  # CloudFront distribution settings
+  distribution = {
+    price_class = "PriceClass_100" # US, Canada, Europe only
+  }
+
+  # Server function configuration with database environment variables
+  server_function = {
+    additional_environment_variables = {
+      DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=require"
+      PAYLOAD_SECRET = module.secrets.payload_secret
+    }
+    # VPC configuration so Lambda can reach RDS
+    vpc = {
+      security_group_ids = [aws_security_group.lambda.id]
+      subnet_ids         = module.vpc.private_subnet_ids
     }
   }
 

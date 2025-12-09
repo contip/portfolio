@@ -109,42 +109,6 @@ resource "aws_dynamodb_table" "lock" {
 }
 
 ################################################################################
-# ECR Repository for Strapi
-################################################################################
-
-resource "aws_ecr_repository" "strapi" {
-  name                 = "${var.project}-strapi"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-}
-
-resource "aws_ecr_lifecycle_policy" "strapi" {
-  repository = aws_ecr_repository.strapi.name
-
-  policy = jsonencode({
-    rules = [{
-      rulePriority = 1
-      description  = "Keep only last 10 images"
-      selection = {
-        tagStatus   = "any"
-        countType   = "imageCountMoreThan"
-        countNumber = 10
-      }
-      action = {
-        type = "expire"
-      }
-    }]
-  })
-}
-
-################################################################################
 # Outputs
 ################################################################################
 
@@ -156,11 +120,6 @@ output "state_bucket" {
 output "lock_table" {
   description = "DynamoDB table for state locking"
   value       = aws_dynamodb_table.lock.name
-}
-
-output "ecr_repository_url" {
-  description = "ECR repository URL for Strapi"
-  value       = aws_ecr_repository.strapi.repository_url
 }
 
 output "backend_config" {

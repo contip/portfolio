@@ -4,18 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      skip_bootstrap_check:
-        description: "Skip bootstrap verification (use with caution)"
-        required: false
-        default: false
-        type: boolean
 
 env:
   AWS_REGION: us-east-1
-  NODE_VERSION: "22"
+  NODE_VERSION: "20"
   TERRAFORM_VERSION: "1.9.0"
-  ECR_REPOSITORY: portfolio-pconti-strapi
 
 concurrency:
   group: deploy-dev-${{ github.ref }}
@@ -28,12 +21,9 @@ jobs:
   verify-bootstrap:
     name: Verify Bootstrap
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.skip_bootstrap_check != 'true' }}
     permissions:
       id-token: write
       contents: read
-    outputs:
-      ecr_repository_url: ${{ steps.verify.outputs.ecr_repository_url }}
 
     steps:
       - name: Configure AWS credentials
@@ -43,7 +33,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Verify bootstrap resources exist
-        id: verify
         run: |
           set -euo pipefail
 
@@ -54,85 +43,16 @@ jobs:
             echo "::error::Terraform state bucket 'portfolio-pconti-tfstate' not found. Run bootstrap first."
             exit 1
           fi
-          echo "S3 state bucket: OK"
+          echo "✓ S3 state bucket: OK"
 
           # Check DynamoDB lock table
           if ! aws dynamodb describe-table --table-name portfolio-pconti-tf-lock >/dev/null 2>&1; then
             echo "::error::DynamoDB lock table 'portfolio-pconti-tf-lock' not found. Run bootstrap first."
             exit 1
           fi
-          echo "DynamoDB lock table: OK"
+          echo "✓ DynamoDB lock table: OK"
 
-          # Check ECR repository
-          ECR_URL=$(aws ecr describe-repositories \
-            --repository-names ${{ env.ECR_REPOSITORY }} \
-            --query 'repositories[0].repositoryUri' \
-            --output text 2>/dev/null || echo "")
-
-          if [ -z "$ECR_URL" ] || [ "$ECR_URL" == "None" ]; then
-            echo "::error::ECR repository '${{ env.ECR_REPOSITORY }}' not found. Run bootstrap first."
-            exit 1
-          fi
-          echo "ECR repository: OK ($ECR_URL)"
-
-          echo "ecr_repository_url=$ECR_URL" >> "$GITHUB_OUTPUT"
           echo "All bootstrap resources verified successfully"
-
-  ##############################################################################
-  # Build Backend (Strapi)
-  ##############################################################################
-  build-backend:
-    name: Build Backend
-    runs-on: ubuntu-latest
-    needs: [verify-bootstrap]
-    if: ${{ always() && (needs.verify-bootstrap.result == 'success' || needs.verify-bootstrap.result == 'skipped') }}
-    permissions:
-      id-token: write
-      contents: read
-    outputs:
-      image_uri: ${{ steps.build-push.outputs.image_uri }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        id: build-push
-        working-directory: ./backend
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          IMAGE_URI="${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
-
-          echo "Building Strapi image for linux/amd64..."
-          docker buildx build \
-            --platform linux/amd64 \
-            --provenance=false \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            -t "${IMAGE_URI}" \
-            -t "${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:latest" \
-            --push \
-            .
-
-          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
-          echo "Image pushed: ${IMAGE_URI}"
 
   ##############################################################################
   # Build Frontend (Next.js with OpenNext)
@@ -141,7 +61,6 @@ jobs:
     name: Build Frontend
     runs-on: ubuntu-latest
     needs: [verify-bootstrap]
-    if: ${{ always() && (needs.verify-bootstrap.result == 'success' || needs.verify-bootstrap.result == 'skipped') }}
 
     steps:
       - name: Checkout code
@@ -155,8 +74,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # OpenNext officially supports Node 18/20; stick to 20.x for builds
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
           cache-dependency-path: "frontend/pnpm-lock.yaml"
 
@@ -167,8 +85,7 @@ jobs:
       - name: Build Next.js with OpenNext
         working-directory: ./frontend
         env:
-          # NEXT_PUBLIC_* vars must be set at build time (baked into JS bundle)
-          NEXT_PUBLIC_STRAPI_URL: https://api.${{ secrets.DOMAIN_NAME }}
+          NEXT_PUBLIC_PAYLOAD_API_URL: https://api.${{ secrets.DOMAIN_NAME }}
         run: |
           set -euo pipefail
 
@@ -176,25 +93,75 @@ jobs:
           pnpm build
 
           echo "Building OpenNext package for AWS Lambda..."
-          pnpm dlx @opennextjs/aws@3.9.4 build
+          pnpm dlx @opennextjs/aws build
 
           echo "OpenNext build complete"
           ls -la .open-next/
 
-          # Fail if any symlinks remain (they break Lambda)
-          if find .open-next -type l | head -1 | read; then
-            echo "::error::Symlinks found in .open-next - Lambda deployment will fail"
-            find .open-next -type l
-            exit 1
-          fi
+          test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
+
+      - name: Upload OpenNext frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opennext-frontend-build
+          path: frontend/.open-next/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  ##############################################################################
+  # Build Backend (Payload CMS with OpenNext)
+  ##############################################################################
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: [verify-bootstrap]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: "backend/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Payload with OpenNext
+        working-directory: ./backend
+        env:
+          # These are build-time placeholders - actual values injected at runtime via Lambda env vars
+          DATABASE_URI: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          PAYLOAD_SECRET: build-time-placeholder-secret-minimum-length
+        run: |
+          set -euo pipefail
+
+          echo "Building Payload application..."
+          pnpm build
+
+          echo "Building OpenNext package for AWS Lambda..."
+          pnpm dlx @opennextjs/aws build
+
+          echo "OpenNext build complete"
+          ls -la .open-next/
 
           test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
 
-      - name: Upload OpenNext build artifact
+      - name: Upload OpenNext backend build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opennext-build
-          path: frontend/.open-next/
+          name: opennext-backend-build
+          path: backend/.open-next/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -205,7 +172,7 @@ jobs:
   deploy-infrastructure:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]
+    needs: [build-frontend, build-backend]
     permissions:
       id-token: write
       contents: read
@@ -213,18 +180,22 @@ jobs:
       frontend_url: ${{ steps.outputs.outputs.frontend_url }}
       api_url: ${{ steps.outputs.outputs.api_url }}
       cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
-      ecs_cluster: ${{ steps.outputs.outputs.ecs_cluster }}
-      ecs_service: ${{ steps.outputs.outputs.ecs_service }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download OpenNext build artifact
+      - name: Download OpenNext frontend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: opennext-build
+          name: opennext-frontend-build
           path: frontend/.open-next
+
+      - name: Download OpenNext backend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opennext-backend-build
+          path: backend/.open-next
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -248,10 +219,6 @@ jobs:
 
           # Normalize line endings
           tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
-
-          # Append/override the strapi_image variable
-          echo "" >> terraform.tfvars
-          echo "strapi_image = \"${{ needs.build-backend.outputs.image_uri }}\"" >> terraform.tfvars
 
           echo "terraform.tfvars created ($(wc -l < terraform.tfvars) lines)"
 
@@ -280,41 +247,8 @@ jobs:
         working-directory: ./infra
         run: |
           echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
-          echo "api_url=$(terraform output -raw strapi_url)" >> "$GITHUB_OUTPUT"
+          echo "api_url=$(terraform output -raw payload_url)" >> "$GITHUB_OUTPUT"
           echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)" >> "$GITHUB_OUTPUT"
-
-  ##############################################################################
-  # Wait for ECS Service Stability
-  ##############################################################################
-  wait-for-ecs:
-    name: Wait for ECS Deployment
-    runs-on: ubuntu-latest
-    needs: [deploy-infrastructure]
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Wait for ECS service stability
-        run: |
-          set -euo pipefail
-
-          echo "Waiting for ECS service to stabilize..."
-
-          aws ecs wait services-stable \
-            --cluster "${{ needs.deploy-infrastructure.outputs.ecs_cluster }}" \
-            --services "${{ needs.deploy-infrastructure.outputs.ecs_service }}" \
-            --region ${{ env.AWS_REGION }}
-
-          echo "ECS service is stable"
 
   ##############################################################################
   # Invalidate CloudFront Cache
@@ -322,7 +256,7 @@ jobs:
   invalidate-cache:
     name: Invalidate CloudFront
     runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, wait-for-ecs]
+    needs: [deploy-infrastructure]
     permissions:
       id-token: write
       contents: read
@@ -360,7 +294,7 @@ jobs:
   health-check:
     name: Health Check
     runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, wait-for-ecs, invalidate-cache]
+    needs: [deploy-infrastructure, invalidate-cache]
 
     steps:
       - name: Wait for propagation
@@ -377,7 +311,7 @@ jobs:
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$FRONTEND_URL" || echo "000")
 
             if [ "$HTTP_CODE" -eq 200 ]; then
-              echo "Frontend health check passed (HTTP $HTTP_CODE)"
+              echo "✓ Frontend health check passed (HTTP $HTTP_CODE)"
               break
             fi
 
@@ -394,14 +328,14 @@ jobs:
           set -euo pipefail
 
           API_URL="${{ needs.deploy-infrastructure.outputs.api_url }}"
-          HEALTH_URL="${API_URL}/_health"
-          echo "Testing API health: $HEALTH_URL"
+          ADMIN_URL="${API_URL}/admin"
+          echo "Testing Payload admin: $ADMIN_URL"
 
           for i in {1..5}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$HEALTH_URL" || echo "000")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$ADMIN_URL" || echo "000")
 
-            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 204 ]; then
-              echo "API health check passed (HTTP $HTTP_CODE)"
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 302 ]; then
+              echo "✓ API health check passed (HTTP $HTTP_CODE)"
               break
             fi
 
@@ -409,7 +343,7 @@ jobs:
             sleep 10
           done
 
-          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 204 ]; then
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 302 ]; then
             echo "::warning::API health check returned HTTP $HTTP_CODE"
           fi
 
@@ -419,7 +353,7 @@ jobs:
   summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [build-backend, deploy-infrastructure, health-check]
+    needs: [deploy-infrastructure, health-check]
     if: always()
 
     steps:
@@ -435,6 +369,5 @@ jobs:
           echo ""
           echo "Frontend:   ${{ needs.deploy-infrastructure.outputs.frontend_url }}"
           echo "API:        ${{ needs.deploy-infrastructure.outputs.api_url }}"
-          echo "Container:  ${{ needs.build-backend.outputs.image_uri }}"
           echo ""
           echo "=============================================="

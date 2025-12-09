@@ -21,29 +21,8 @@ resource "random_password" "db_password" {
   special = false
 }
 
-resource "random_password" "app_keys" {
-  count   = 4
-  length  = 32
-  special = false
-}
-
-resource "random_password" "api_token_salt" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "admin_jwt_secret" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "transfer_token_salt" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "jwt_secret" {
-  length  = 32
+resource "random_password" "payload_secret" {
+  length  = 64
   special = false
 }
 
@@ -71,44 +50,21 @@ resource "aws_secretsmanager_secret_version" "database" {
 }
 
 ################################################################################
-# Strapi Application Secrets
+# Payload Application Secrets
 ################################################################################
 
-resource "aws_secretsmanager_secret" "strapi" {
-  name                    = "${var.name}/strapi"
+resource "aws_secretsmanager_secret" "payload" {
+  name                    = "${var.name}/payload"
   recovery_window_in_days = var.recovery_window_in_days
 
   tags = var.tags
 }
 
-resource "aws_secretsmanager_secret_version" "strapi" {
-  secret_id = aws_secretsmanager_secret.strapi.id
+resource "aws_secretsmanager_secret_version" "payload" {
+  secret_id = aws_secretsmanager_secret.payload.id
 
   secret_string = jsonencode({
-    APP_KEYS            = join(",", random_password.app_keys[*].result)
-    API_TOKEN_SALT      = random_password.api_token_salt.result
-    ADMIN_JWT_SECRET    = random_password.admin_jwt_secret.result
-    TRANSFER_TOKEN_SALT = random_password.transfer_token_salt.result
-    JWT_SECRET          = random_password.jwt_secret.result
-  })
-}
-
-################################################################################
-# Frontend Secrets (for Next.js Lambda)
-################################################################################
-
-resource "aws_secretsmanager_secret" "frontend" {
-  name                    = "${var.name}/frontend"
-  recovery_window_in_days = var.recovery_window_in_days
-
-  tags = var.tags
-}
-
-resource "aws_secretsmanager_secret_version" "frontend" {
-  secret_id = aws_secretsmanager_secret.frontend.id
-
-  secret_string = jsonencode({
-    STRAPI_API_TOKEN = var.strapi_api_token
+    PAYLOAD_SECRET = random_password.payload_secret.result
   })
 }
 
@@ -125,8 +81,7 @@ data "aws_iam_policy_document" "secrets_access" {
     ]
     resources = [
       aws_secretsmanager_secret.database.arn,
-      aws_secretsmanager_secret.strapi.arn,
-      aws_secretsmanager_secret.frontend.arn
+      aws_secretsmanager_secret.payload.arn
     ]
   }
 }

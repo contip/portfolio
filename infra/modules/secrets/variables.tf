@@ -6,7 +6,7 @@ variable "name" {
 variable "database_username" {
   description = "Database master username"
   type        = string
-  default     = "strapi"
+  default     = "payload"
 }
 
 variable "database_name" {
@@ -30,13 +30,6 @@ variable "recovery_window_in_days" {
   description = "Number of days before secret can be deleted (0 for immediate)"
   type        = number
   default     = 0
-}
-
-variable "strapi_api_token" {
-  description = "Strapi API token for frontend access (created in Strapi admin UI)"
-  type        = string
-  default     = ""
-  sensitive   = true
 }
 
 variable "tags" {

@@ -21,33 +21,18 @@ output "database_secret_arn" {
   value       = module.secrets.database_secret_arn
 }
 
-output "strapi_secret_arn" {
-  description = "ARN of the Strapi application secrets"
-  value       = module.secrets.strapi_secret_arn
-}
-
 ################################################################################
-# Strapi Outputs
+# Payload CMS Outputs
 ################################################################################
 
-output "strapi_alb_dns" {
-  description = "Strapi ALB DNS name"
-  value       = module.alb.dns_name
+output "payload_secret_arn" {
+  description = "ARN of the Payload application secrets"
+  value       = module.secrets.payload_secret_arn
 }
 
-output "strapi_url" {
-  description = "Strapi API URL"
+output "payload_url" {
+  description = "Payload CMS URL"
   value       = "https://api.${var.domain_name}"
-}
-
-output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = module.ecs_strapi.cluster_name
-}
-
-output "ecs_service_name" {
-  description = "ECS service name"
-  value       = module.ecs_strapi.service_name
 }
 
 ################################################################################
@@ -61,5 +46,5 @@ output "frontend_url" {
 
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID for cache invalidation"
-  value       = module.opennext.cloudfront_distribution_id
+  value       = module.opennext_frontend.cloudfront_distribution_id
 }
