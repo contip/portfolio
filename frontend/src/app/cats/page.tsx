@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getCats } from "@/lib/strapi";
+import { getCats } from "@/lib/payload";
 import { Cat, ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default async function CatsPage() {
           </Button>
           <h1 className="text-4xl font-bold tracking-tight mb-4">Cats</h1>
           <p className="text-lg text-muted-foreground">
-            A collection of cats fetched from the Strapi CMS backend.
+            A collection of cats fetched from the Payload CMS backend.
           </p>
         </div>
 
@@ -33,10 +33,10 @@ export default async function CatsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>{cat.name}</CardTitle>
-                      <Badge variant="secondary">{cat.Breed}</Badge>
+                      <Badge variant="secondary">{cat.breed}</Badge>
                     </div>
                     <CardDescription>
-                      {cat.description || `A lovely ${cat.Breed.toLowerCase()}`}
+                      A lovely {cat.breed?.toLowerCase() ?? 'cat'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -56,11 +56,11 @@ export default async function CatsPage() {
               <Cat className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">No cats found</h2>
               <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                The cats collection is empty. Create some cats in the Strapi admin panel to see them here.
+                The cats collection is empty. Create some cats in the Payload admin panel to see them here.
               </p>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p className="font-medium">Required fields:</p>
-                <p>name (Text), slug (UID), breed (Text), weight (Number), age (Number)</p>
+                <p>name (Text), slug (Text), breed (Select), weight (Number), age (Number)</p>
               </div>
             </CardContent>
           </Card>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getCatBySlug, getCats } from "@/lib/strapi";
+import { getCatBySlug, getCats } from "@/lib/payload";
 import { ArrowLeft, Scale, Calendar, Cat } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -44,14 +44,9 @@ export default async function CatPage({ params }: CatPageProps) {
               </div>
               <div>
                 <CardTitle className="text-3xl">{cat.name}</CardTitle>
-                <Badge variant="secondary" className="mt-1">{cat.Breed}</Badge>
+                <Badge variant="secondary" className="mt-1">{cat.breed}</Badge>
               </div>
             </div>
-            {cat.description && (
-              <CardDescription className="text-base mt-4">
-                {cat.description}
-              </CardDescription>
-            )}
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">

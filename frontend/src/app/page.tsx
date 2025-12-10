@@ -2,24 +2,23 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getStrapiHealth, getCats, STRAPI_URL } from "@/lib/strapi";
-import { ExternalLink, Cat, Server, Database, Globe, Container, Code2, Cloud } from "lucide-react";
+import { getPayloadHealth, getCats, PAYLOAD_API_URL } from "@/lib/payload";
+import { ExternalLink, Cat, Server, Database, Globe, Code2, Cloud } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [strapiHealthy, cats] = await Promise.all([
-    getStrapiHealth(),
+  const [payloadHealthy, cats] = await Promise.all([
+    getPayloadHealth(),
     getCats(),
   ]);
 
   const techStack = [
     { name: "Next.js 16", description: "React framework with App Router", icon: Code2 },
     { name: "React 19", description: "UI library with Server Components", icon: Code2 },
-    { name: "Strapi v5", description: "Headless CMS for content", icon: Database },
+    { name: "Payload CMS", description: "Headless CMS for content", icon: Database },
     { name: "AWS Lambda", description: "Serverless compute via OpenNext", icon: Cloud },
     { name: "CloudFront", description: "Global CDN for edge delivery", icon: Globe },
-    { name: "ECS Fargate", description: "Container orchestration", icon: Container },
     { name: "RDS PostgreSQL", description: "Managed database", icon: Database },
     { name: "Terraform", description: "Infrastructure as Code", icon: Server },
   ];
@@ -34,7 +33,7 @@ export default async function Home() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
             A full-stack portfolio application demonstrating modern cloud architecture
-            with Next.js, Strapi CMS, and AWS infrastructure managed by Terraform.
+            with Next.js, Payload CMS, and AWS infrastructure managed by Terraform.
           </p>
         </section>
 
@@ -55,18 +54,18 @@ export default async function Home() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Backend (Strapi CMS)</CardTitle>
-                  <Badge variant={strapiHealthy ? "default" : "destructive"} className={strapiHealthy ? "bg-green-600" : ""}>
-                    {strapiHealthy ? "Healthy" : "Unhealthy"}
+                  <CardTitle className="text-base">Backend (Payload CMS)</CardTitle>
+                  <Badge variant={payloadHealthy ? "default" : "destructive"} className={payloadHealthy ? "bg-green-600" : ""}>
+                    {payloadHealthy ? "Healthy" : "Unhealthy"}
                   </Badge>
                 </div>
                 <CardDescription>
-                  {strapiHealthy ? "API responding normally" : "API not responding"}
+                  {payloadHealthy ? "API responding normally" : "API not responding"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" size="sm" asChild>
-                  <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer">
+                  <a href={`${PAYLOAD_API_URL}/admin`} target="_blank" rel="noopener noreferrer">
                     Open Admin <ExternalLink className="ml-2 h-3 w-3" />
                   </a>
                 </Button>
@@ -94,7 +93,7 @@ export default async function Home() {
                     <CardHeader>
                       <CardTitle className="text-base">{cat.name}</CardTitle>
                       <CardDescription>
-                        {cat.Breed} &middot; {cat.age} years &middot; {cat.weight} lbs
+                        {cat.breed} &middot; {cat.age} years &middot; {cat.weight} lbs
                       </CardDescription>
                     </CardHeader>
                   </Link>
@@ -109,7 +108,7 @@ export default async function Home() {
                   No cats found in the database yet.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Create a &quot;Cat&quot; collection in Strapi with fields: name, slug, breed, weight, age
+                  Create a cat in Payload Admin with fields: name, slug, breed, weight, age
                 </p>
               </CardContent>
             </Card>
