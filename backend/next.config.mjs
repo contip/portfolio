@@ -5,8 +5,10 @@ const nextConfig = {
   // Output standalone for Lambda deployment
   output: 'standalone',
 
-  // Include sharp in the server bundle for Lambda
-  serverExternalPackages: ['sharp'],
+  // Force include sharp and its native binaries in the standalone output
+  outputFileTracingIncludes: {
+    '/**/*': ['./node_modules/sharp/**/*', './node_modules/@img/**/*'],
+  },
 
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
