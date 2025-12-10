@@ -306,7 +306,7 @@ module "opennext_backend" {
   # Server function configuration with database environment variables
   server_function = {
     additional_environment_variables = {
-      DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=require"
+      DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
       PAYLOAD_SECRET = module.secrets.payload_secret
     }
     # VPC configuration so Lambda can reach RDS
