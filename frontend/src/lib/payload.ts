@@ -65,8 +65,10 @@ export async function getCats(): Promise<Cat[]> {
 
 export async function getCatBySlug(slug: string): Promise<Cat | null> {
   try {
+    const params = new URLSearchParams();
+    params.set("where[slug][equals]", slug);
     const response = await fetchPayload<PayloadListResponse<Cat>>(
-      `/cats?where[slug][equals]=${encodeURIComponent(slug)}`
+      `/cats?${params.toString()}`
     );
     return response.docs[0] || null;
   } catch (error) {
