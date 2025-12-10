@@ -6,6 +6,7 @@ const config = {
     install: {
       packages: ['sharp@0.34.2'],
       arch: 'arm64',
+      libc: 'glibc',
     },
   },
 } satisfies OpenNextConfig

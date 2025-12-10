@@ -135,7 +135,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./backend
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile
+          # Reinstall sharp with ARM64 Linux binaries for Lambda
+          pnpm remove sharp
+          npm install --cpu=arm64 --os=linux --libc=glibc sharp@0.34.2
 
       - name: Build Payload with OpenNext
         working-directory: ./backend
