@@ -2,10 +2,10 @@ import type { OpenNextConfig } from '@opennextjs/aws/types/open-next'
 
 const config = {
   default: {
-    // Install sharp with the correct architecture for Lambda
+    // Install sharp with the correct architecture for Lambda (ARM64)
     install: {
       packages: ['sharp@0.34.2'],
-      arch: 'x64',
+      arch: 'arm64',
     },
   },
 } satisfies OpenNextConfig
