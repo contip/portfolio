@@ -149,16 +149,6 @@ jobs:
           echo "Building Payload application..."
           pnpm build
 
-          echo "Replacing sharp with ARM64 version for Lambda..."
-          rm -rf node_modules/sharp node_modules/@img
-          rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img 2>/dev/null || true
-          npm install --cpu=arm64 --os=linux --libc=glibc sharp@0.34.2
-          # Also copy to standalone if it exists
-          if [ -d ".next/standalone/node_modules" ]; then
-            cp -r node_modules/sharp .next/standalone/node_modules/
-            cp -r node_modules/@img .next/standalone/node_modules/ 2>/dev/null || true
-          fi
-
           echo "Building OpenNext package for AWS Lambda..."
           pnpm dlx @opennextjs/aws build
 

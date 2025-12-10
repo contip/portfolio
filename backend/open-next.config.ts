@@ -4,9 +4,8 @@ const config = {
   default: {
     // Install sharp with the correct architecture for Lambda (ARM64)
     install: {
-      packages: ['sharp@0.34.2'],
+      packages: ['sharp@0.32.6'],
       arch: 'arm64',
-      libc: 'glibc',
     },
   },
 } satisfies OpenNextConfig
