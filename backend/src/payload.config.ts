@@ -9,6 +9,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Cats } from './collections/Cats'
 import { migrations } from './migrations'
+import { plugins } from './plugins'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -33,5 +34,5 @@ export default buildConfig({
     prodMigrations: migrations,
   }),
   sharp,
-  plugins: [],
+  plugins: [...plugins],
 })

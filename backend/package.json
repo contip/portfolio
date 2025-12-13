@@ -9,7 +9,7 @@
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
-    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types && npx tsx scripts/export-types.ts",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "3.68.1",
     "@payloadcms/next": "3.68.1",
+    "@payloadcms/plugin-form-builder": "^3.68.2",
     "@payloadcms/richtext-lexical": "3.68.1",
     "@payloadcms/ui": "3.68.1",
     "cross-env": "^7.0.3",

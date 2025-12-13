@@ -1,3 +1,5 @@
+import type { Cat } from "@/types/payload-types";
+
 // NEXT_PUBLIC_PAYLOAD_API_URL is baked in at build time for client-side code
 // PAYLOAD_API_URL is the runtime env var for server-side code (Lambda)
 const PAYLOAD_API_URL =
@@ -18,16 +20,7 @@ interface PayloadListResponse<T> {
   nextPage: number | null;
 }
 
-export interface Cat {
-  id: string;
-  name: string;
-  slug: string;
-  breed: string;
-  weight: number | null;
-  age: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { Cat };
 
 async function fetchPayload<T>(
   endpoint: string,
