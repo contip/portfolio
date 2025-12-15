@@ -215,10 +215,40 @@ module "acm" {
   }
 
   domain_name               = var.domain_name
-  subject_alternative_names = ["api.${var.domain_name}", "www.${var.domain_name}"]
+  subject_alternative_names = ["api.${var.domain_name}", "www.${var.domain_name}", "media.${var.domain_name}"]
   hosted_zone_id            = var.hosted_zone_id
 
   tags = local.tags
+}
+
+################################################################################
+# Media Storage (S3 + CloudFront)
+################################################################################
+
+module "media_storage" {
+  source = "./modules/media-storage"
+
+  name        = local.name
+  bucket_name = "${local.name}-media-${data.aws_caller_identity.current.account_id}"
+  region      = local.region
+
+  # Custom domain configuration
+  domain_name     = var.domain_name
+  hosted_zone_id  = var.hosted_zone_id
+  certificate_arn = module.acm.certificate_arn
+
+  # CORS configuration
+  cors_allowed_origins = [
+    "https://${var.domain_name}",
+    "https://www.${var.domain_name}",
+    "https://api.${var.domain_name}"
+  ]
+
+  price_class = "PriceClass_100" # US, Canada, Europe
+
+  tags = local.tags
+
+  depends_on = [module.acm]
 }
 
 ################################################################################
@@ -303,11 +333,19 @@ module "opennext_backend" {
     price_class = "PriceClass_100" # US, Canada, Europe only
   }
 
-  # Server function configuration with database environment variables
+  # Server function configuration with database and S3 environment variables
   server_function = {
     additional_environment_variables = {
+      # Database configuration
       DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
       PAYLOAD_SECRET = module.secrets.payload_secret
+
+      # S3 Storage configuration for Payload CMS
+      S3_BUCKET            = module.media_storage.s3_bucket
+      S3_ACCESS_KEY_ID     = module.media_storage.s3_access_key_id
+      S3_SECRET_ACCESS_KEY = module.media_storage.s3_secret_access_key
+      S3_REGION            = module.media_storage.s3_region
+      CLOUDFRONT_DOMAIN    = module.media_storage.media_url
     }
     # VPC configuration so Lambda can reach RDS
     vpc = {

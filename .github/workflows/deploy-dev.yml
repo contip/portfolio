@@ -180,6 +180,8 @@ jobs:
       frontend_url: ${{ steps.outputs.outputs.frontend_url }}
       api_url: ${{ steps.outputs.outputs.api_url }}
       cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
+      media_url: ${{ steps.outputs.outputs.media_url }}
+      media_cloudfront_distribution_id: ${{ steps.outputs.outputs.media_cloudfront_distribution_id }}
 
     steps:
       - name: Checkout code
@@ -249,6 +251,8 @@ jobs:
           echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
           echo "api_url=$(terraform output -raw payload_url)" >> "$GITHUB_OUTPUT"
           echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "media_url=$(terraform output -raw media_url)" >> "$GITHUB_OUTPUT"
+          echo "media_cloudfront_distribution_id=$(terraform output -raw media_cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
 
   ##############################################################################
   # Invalidate CloudFront Cache
@@ -369,5 +373,6 @@ jobs:
           echo ""
           echo "Frontend:   ${{ needs.deploy-infrastructure.outputs.frontend_url }}"
           echo "API:        ${{ needs.deploy-infrastructure.outputs.api_url }}"
+          echo "Media CDN:  ${{ needs.deploy-infrastructure.outputs.media_url }}"
           echo ""
           echo "=============================================="

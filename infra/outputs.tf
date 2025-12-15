@@ -48,3 +48,27 @@ output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID for cache invalidation"
   value       = module.opennext_frontend.cloudfront_distribution_id
 }
+
+################################################################################
+# Media Storage Outputs
+################################################################################
+
+output "media_bucket_name" {
+  description = "S3 bucket name for media storage"
+  value       = module.media_storage.bucket_id
+}
+
+output "media_cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for media"
+  value       = module.media_storage.cloudfront_distribution_id
+}
+
+output "media_url" {
+  description = "URL for accessing media via CloudFront"
+  value       = module.media_storage.media_url
+}
+
+output "s3_credentials_secret_arn" {
+  description = "ARN of the S3 credentials secret in Secrets Manager"
+  value       = module.media_storage.s3_credentials_secret_arn
+}
