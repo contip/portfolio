@@ -150,35 +150,17 @@ resource "aws_s3_bucket_policy" "media" {
 }
 
 ################################################################################
-# CloudFront Cache Policy - Aggressive Caching for Media
+# CloudFront Cache Policy
+# Using AWS Managed CachingOptimized policy (658327ea-f89d-4fab-a63d-7e88639e58f6)
+# - Min TTL: 1 second
+# - Max TTL: 31,536,000 seconds (365 days)
+# - Default TTL: 86,400 seconds (24 hours)
+# - Gzip/Brotli compression enabled
 ################################################################################
 
-resource "aws_cloudfront_cache_policy" "media" {
-  name        = "${var.name}-media-cache-policy"
-  comment     = "Aggressive caching policy for media assets"
-  default_ttl = 31536000 # 1 year
-  max_ttl     = 31536000 # 1 year
-  min_ttl     = 86400    # 1 day minimum
-
-  parameters_in_cache_key_and_forwarded_to_origin {
-    cookies_config {
-      cookie_behavior = "none"
-    }
-
-    headers_config {
-      header_behavior = "whitelist"
-      headers {
-        items = ["Accept", "Accept-Encoding"]
-      }
-    }
-
-    query_strings_config {
-      query_string_behavior = "none"
-    }
-
-    enable_accept_encoding_gzip   = true
-    enable_accept_encoding_brotli = true
-  }
+locals {
+  # AWS Managed CachingOptimized policy ID
+  caching_optimized_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6"
 }
 
 ################################################################################
@@ -240,7 +222,7 @@ resource "aws_cloudfront_distribution" "media" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "S3-${aws_s3_bucket.media.id}"
 
-    cache_policy_id            = aws_cloudfront_cache_policy.media.id
+    cache_policy_id            = local.caching_optimized_policy_id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.media.id
 
     viewer_protocol_policy = "redirect-to-https"
