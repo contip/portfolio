@@ -4,17 +4,19 @@ import { Plugin } from 'payload'
 /**
  * Generates the public URL for media files served via CloudFront.
  *
- * In production/dev environments, files are served through CloudFront for
- * optimal caching and performance. In local development with S3 (e.g., MinIO),
- * files are served directly from the S3 endpoint.
+ * All media files MUST be served through CloudFront. The CLOUDFRONT_DOMAIN
+ * environment variable is required and must be set (e.g., https://media.example.com).
+ *
+ * @throws Error if CLOUDFRONT_DOMAIN is not configured
  */
 const generateFileUrl = ({ filename, prefix }: { filename: string; prefix?: string }): string => {
   const cloudfrontDomain = process.env.CLOUDFRONT_DOMAIN
 
   if (!cloudfrontDomain) {
-    // Fallback for local development without CloudFront
-    const s3Url = process.env.S3_URL || `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com`
-    return prefix ? `${s3Url}/${prefix}/${filename}` : `${s3Url}/${filename}`
+    throw new Error(
+      'CLOUDFRONT_DOMAIN environment variable is required. ' +
+        'Media files must be served through CloudFront CDN.',
+    )
   }
 
   return prefix ? `${cloudfrontDomain}/${prefix}/${filename}` : `${cloudfrontDomain}/${filename}`

@@ -1,5 +1,6 @@
 import type { CollectionConfig, ImageUploadFormatOptions } from 'payload'
 import { authenticated } from '../access/authenticated'
+import getAdminThumbnail from './getAdminThumbnail'
 
 const formatOptions: ImageUploadFormatOptions = {
   format: 'webp',
@@ -64,6 +65,7 @@ export const Media: CollectionConfig = {
     disableLocalStorage: true,
     // Allowed file types
     mimeTypes: ['image/*', 'video/*'],
+    // Admin panel thumbnail
+    adminThumbnail: getAdminThumbnail,
   },
-  // Note: URL generation is handled automatically by S3StoragePlugin's generateFileURL
 }

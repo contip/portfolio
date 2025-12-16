@@ -39,12 +39,12 @@ export default async function CatPage({ params }: CatPageProps) {
         </Button>
 
         <Card className="overflow-hidden">
-          {cat.image && typeof cat.image === 'object' && (
+          {cat.image && typeof cat.image === "object" && (
             <div className="relative aspect-video w-full">
               <Media
                 resource={cat.image as MediaType}
                 fill
-                imgClassName="object-cover"
+                imgClassName="object-contain"
                 size="(max-width: 768px) 100vw, 768px"
                 priority
               />
@@ -52,14 +52,16 @@ export default async function CatPage({ params }: CatPageProps) {
           )}
           <CardHeader>
             <div className="flex items-center gap-4 mb-2">
-              {(!cat.image || typeof cat.image !== 'object') && (
+              {(!cat.image || typeof cat.image !== "object") && (
                 <div className="p-3 rounded-full bg-primary/10">
                   <Cat className="h-8 w-8 text-primary" />
                 </div>
               )}
               <div>
                 <CardTitle className="text-3xl">{cat.name}</CardTitle>
-                <Badge variant="secondary" className="mt-1">{cat.breed}</Badge>
+                <Badge variant="secondary" className="mt-1">
+                  {cat.breed}
+                </Badge>
               </div>
             </div>
           </CardHeader>
@@ -85,7 +87,11 @@ export default async function CatPage({ params }: CatPageProps) {
               <p className="text-xs text-muted-foreground">
                 Created: {new Date(cat.createdAt).toLocaleDateString()}
                 {cat.updatedAt !== cat.createdAt && (
-                  <> &middot; Updated: {new Date(cat.updatedAt).toLocaleDateString()}</>
+                  <>
+                    {" "}
+                    &middot; Updated:{" "}
+                    {new Date(cat.updatedAt).toLocaleDateString()}
+                  </>
                 )}
               </p>
             </div>
