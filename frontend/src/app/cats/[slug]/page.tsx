@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCatBySlug, getCats } from "@/lib/payload";
 import { ArrowLeft, Scale, Calendar, Cat } from "lucide-react";
+import { Media } from "@/components/Media";
+import type { Media as MediaType } from "@/types/payload-types";
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +38,25 @@ export default async function CatPage({ params }: CatPageProps) {
           </Link>
         </Button>
 
-        <Card>
+        <Card className="overflow-hidden">
+          {cat.image && typeof cat.image === 'object' && (
+            <div className="relative aspect-video w-full">
+              <Media
+                resource={cat.image as MediaType}
+                fill
+                imgClassName="object-cover"
+                size="(max-width: 768px) 100vw, 768px"
+                priority
+              />
+            </div>
+          )}
           <CardHeader>
             <div className="flex items-center gap-4 mb-2">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Cat className="h-8 w-8 text-primary" />
-              </div>
+              {(!cat.image || typeof cat.image !== 'object') && (
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Cat className="h-8 w-8 text-primary" />
+                </div>
+              )}
               <div>
                 <CardTitle className="text-3xl">{cat.name}</CardTitle>
                 <Badge variant="secondary" className="mt-1">{cat.breed}</Badge>

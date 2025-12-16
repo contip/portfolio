@@ -39,5 +39,10 @@ export const Cats: CollectionConfig = {
       type: 'text',
       required: true,
     },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+    },
   ],
 }

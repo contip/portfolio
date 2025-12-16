@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCats } from "@/lib/payload";
 import { Cat, ArrowLeft } from "lucide-react";
+import { Media } from "@/components/Media";
+import type { Media as MediaType } from "@/types/payload-types";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +30,18 @@ export default async function CatsPage() {
         {cats.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {cats.map((cat) => (
-              <Card key={cat.id} className="hover:border-primary/50 transition-colors">
+              <Card key={cat.id} className="hover:border-primary/50 transition-colors overflow-hidden">
                 <Link href={`/cats/${cat.slug}`}>
+                  {cat.image && typeof cat.image === 'object' && (
+                    <div className="relative aspect-4/3 w-full">
+                      <Media
+                        resource={cat.image as MediaType}
+                        fill
+                        imgClassName="object-cover"
+                        size="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
+                  )}
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>{cat.name}</CardTitle>

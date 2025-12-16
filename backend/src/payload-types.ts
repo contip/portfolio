@@ -210,6 +210,7 @@ export interface Cat {
   weight?: number | null;
   age?: number | null;
   slug: string;
+  image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -596,6 +597,7 @@ export interface CatsSelect<T extends boolean = true> {
   weight?: T;
   age?: T;
   slug?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
 }
