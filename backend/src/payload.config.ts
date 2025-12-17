@@ -7,7 +7,7 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
-import { Cats } from './collections/Cats'
+import { Lizards } from './collections/Lizards'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
 
@@ -21,7 +21,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Cats],
+  collections: [Users, Media, Lizards],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

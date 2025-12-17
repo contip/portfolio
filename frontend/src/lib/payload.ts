@@ -1,4 +1,4 @@
-import type { Cat } from "@/types/payload-types";
+import type { Lizard } from "@/types/payload-types";
 
 // NEXT_PUBLIC_PAYLOAD_API_URL is baked in at build time for client-side code
 // PAYLOAD_API_URL is the runtime env var for server-side code (Lambda)
@@ -20,7 +20,7 @@ interface PayloadListResponse<T> {
   nextPage: number | null;
 }
 
-export type { Cat };
+export type { Lizard };
 
 async function fetchPayload<T>(
   endpoint: string,
@@ -46,26 +46,26 @@ async function fetchPayload<T>(
   return res.json();
 }
 
-export async function getCats(): Promise<Cat[]> {
+export async function getLizards(): Promise<Lizard[]> {
   try {
-    const response = await fetchPayload<PayloadListResponse<Cat>>("/cats");
+    const response = await fetchPayload<PayloadListResponse<Lizard>>("/lizards");
     return response.docs;
   } catch (error) {
-    console.error("Failed to fetch cats:", error);
+    console.error("Failed to fetch lizards:", error);
     return [];
   }
 }
 
-export async function getCatBySlug(slug: string): Promise<Cat | null> {
+export async function getLizardBySlug(slug: string): Promise<Lizard | null> {
   try {
     const params = new URLSearchParams();
     params.set("where[slug][equals]", slug);
-    const response = await fetchPayload<PayloadListResponse<Cat>>(
-      `/cats?${params.toString()}`
+    const response = await fetchPayload<PayloadListResponse<Lizard>>(
+      `/lizards?${params.toString()}`
     );
     return response.docs[0] || null;
   } catch (error) {
-    console.error(`Failed to fetch cat with slug ${slug}:`, error);
+    console.error(`Failed to fetch lizard with slug ${slug}:`, error);
     return null;
   }
 }
@@ -73,7 +73,7 @@ export async function getCatBySlug(slug: string): Promise<Cat | null> {
 export async function getPayloadHealth(): Promise<boolean> {
   try {
     // Payload doesn't have a dedicated health endpoint, so we check if API responds
-    const res = await fetch(`${PAYLOAD_API_URL}/api/cats?limit=0`, {
+    const res = await fetch(`${PAYLOAD_API_URL}/api/lizards?limit=0`, {
       next: { revalidate: 30 },
     });
     return res.ok;

@@ -2,15 +2,26 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getPayloadHealth, getCats, PAYLOAD_API_URL } from "@/lib/payload";
-import { ExternalLink, Cat, Server, Database, Globe, Code2, Cloud } from "lucide-react";
+import { getPayloadHealth, getLizards, PAYLOAD_API_URL } from "@/lib/payload";
+import { ExternalLink, Server, Database, Globe, Code2, Cloud } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+const speciesLabels: Record<string, string> = {
+  sagrei: "Cuban Brown Anole",
+  baracoa: "Baracoa Anole",
+  barbatus: "Cuban False Chameleon",
+};
+
+function getSpeciesLabel(species: string | null | undefined): string {
+  if (!species) return "Unknown";
+  return speciesLabels[species] ?? species;
+}
+
 export default async function Home() {
-  const [payloadHealthy, cats] = await Promise.all([
+  const [payloadHealthy, lizards] = await Promise.all([
     getPayloadHealth(),
-    getCats(),
+    getLizards(),
   ]);
 
   const techStack = [
@@ -79,21 +90,22 @@ export default async function Home() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">Content Preview</h2>
             <Button variant="ghost" asChild>
-              <Link href="/cats">
-                View all cats <Cat className="ml-2 h-4 w-4" />
+              <Link href="/lizards">
+                View all lizards <span className="ml-2">🦎</span>
               </Link>
             </Button>
           </div>
 
-          {cats.length > 0 ? (
+          {lizards.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {cats.slice(0, 3).map((cat) => (
-                <Card key={cat.id} className="hover:border-primary/50 transition-colors">
-                  <Link href={`/cats/${cat.slug}`}>
+              {lizards.slice(0, 3).map((lizard) => (
+                <Card key={lizard.id} className="hover:border-primary/50 transition-colors">
+                  <Link href={`/lizards/${lizard.slug}`}>
                     <CardHeader>
-                      <CardTitle className="text-base">{cat.name}</CardTitle>
+                      <CardTitle className="text-base">{lizard.name}</CardTitle>
                       <CardDescription>
-                        {cat.breed} &middot; {cat.age} years &middot; {cat.weight} lbs
+                        {getSpeciesLabel(lizard.species)}
+                        {lizard.age && <> &middot; {lizard.age} years</>}
                       </CardDescription>
                     </CardHeader>
                   </Link>
@@ -103,12 +115,12 @@ export default async function Home() {
           ) : (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
-                <Cat className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <div className="mx-auto h-12 w-12 text-muted-foreground mb-4 text-3xl">🦎</div>
                 <p className="text-muted-foreground mb-2">
-                  No cats found in the database yet.
+                  No lizards found in the database yet.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Create a cat in Payload Admin with fields: name, slug, breed, weight, age
+                  Create a lizard in Payload Admin with fields: name, slug, species, age
                 </p>
               </CardContent>
             </Card>

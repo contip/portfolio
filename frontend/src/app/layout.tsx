@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Portfolio | Peter Conti",
-  description: "Full-stack engineering portfolio showcasing AWS infrastructure and modern web development",
+  description:
+    "Full-stack engineering portfolio showcasing AWS infrastructure and modern web development",
 };
 
 export default function RootLayout({
@@ -40,7 +41,7 @@ export default function RootLayout({
                   <Link href="/">Home</Link>
                 </Button>
                 <Button variant="ghost" asChild>
-                  <Link href="/cats">Cats</Link>
+                  <Link href="/lizards">Lizards</Link>
                 </Button>
               </div>
             </div>

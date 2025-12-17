@@ -69,7 +69,7 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
-    cats: Cat;
+    lizards: Lizard;
     forms: Form;
     'form-submissions': FormSubmission;
     'payload-kv': PayloadKv;
@@ -81,7 +81,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    cats: CatsSelect<false> | CatsSelect<true>;
+    lizards: LizardsSelect<false> | LizardsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -202,14 +202,17 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cats".
+ * via the `definition` "lizards".
  */
-export interface Cat {
+export interface Lizard {
   id: number;
   name: string;
-  breed?: ('siamese' | 'maine_coon' | 'persian' | 'ragdoll' | 'british_shorthair' | 'tomcat') | null;
-  weight?: number | null;
+  species?: ('sagrei' | 'baracoa' | 'barbatus') | null;
   age?: number | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
   slug: string;
   image?: (number | null) | Media;
   updatedAt: string;
@@ -451,8 +454,8 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
-        relationTo: 'cats';
-        value: number | Cat;
+        relationTo: 'lizards';
+        value: number | Lizard;
       } | null)
     | ({
         relationTo: 'forms';
@@ -591,13 +594,13 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cats_select".
+ * via the `definition` "lizards_select".
  */
-export interface CatsSelect<T extends boolean = true> {
+export interface LizardsSelect<T extends boolean = true> {
   name?: T;
-  breed?: T;
-  weight?: T;
+  species?: T;
   age?: T;
+  generateSlug?: T;
   slug?: T;
   image?: T;
   updatedAt?: T;
