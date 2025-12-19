@@ -1,6 +1,7 @@
 import { Plugin } from 'payload'
 import { FormBuilderPlugin } from './form-builder'
 import { S3StoragePlugin } from './s3'
+import { PayloadAiPlugin } from './ai'
 
 /**
  * Payload CMS Plugins
@@ -10,4 +11,4 @@ import { S3StoragePlugin } from './s3'
  * cloud storage in deployed environments.
  */
 
-export const plugins: Plugin[] = [FormBuilderPlugin, S3StoragePlugin]
+export const plugins: Plugin[] = [FormBuilderPlugin, S3StoragePlugin, PayloadAiPlugin]
