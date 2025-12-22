@@ -99,13 +99,14 @@ jobs:
           ls -la .open-next/
 
           test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
+          tar -czf opennext-frontend.tar.gz .open-next
+          ls -la opennext-frontend.tar.gz
 
       - name: Upload OpenNext frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: opennext-frontend-build
-          path: frontend/.open-next/
-          include-hidden-files: true
+          path: frontend/opennext-frontend.tar.gz
           if-no-files-found: error
           retention-days: 1
 
@@ -156,13 +157,14 @@ jobs:
           ls -la .open-next/
 
           test -d .open-next || { echo "::error::.open-next directory missing after build"; exit 1; }
+          tar -czf opennext-backend.tar.gz .open-next
+          ls -la opennext-backend.tar.gz
 
       - name: Upload OpenNext backend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: opennext-backend-build
-          path: backend/.open-next/
-          include-hidden-files: true
+          path: backend/opennext-backend.tar.gz
           if-no-files-found: error
           retention-days: 1
 
@@ -191,13 +193,27 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: opennext-frontend-build
-          path: frontend/.open-next
+          path: frontend
+
+      - name: Extract OpenNext frontend build artifact
+        working-directory: ./frontend
+        run: |
+          set -euo pipefail
+          rm -rf .open-next
+          tar -xzf opennext-frontend.tar.gz
 
       - name: Download OpenNext backend build artifact
         uses: actions/download-artifact@v4
         with:
           name: opennext-backend-build
-          path: backend/.open-next
+          path: backend
+
+      - name: Extract OpenNext backend build artifact
+        working-directory: ./backend
+        run: |
+          set -euo pipefail
+          rm -rf .open-next
+          tar -xzf opennext-backend.tar.gz
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
