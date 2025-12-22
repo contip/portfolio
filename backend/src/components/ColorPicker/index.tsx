@@ -1,0 +1,150 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { useField } from '@payloadcms/ui'
+import rawColors from '@/config/colors.json'
+
+type Color = { title: string; hex: string }
+
+type RawCategory = {
+  name: string
+  colors: Color[]
+}
+
+type ColorCategory = {
+  title: string
+  colors: Color[]
+}
+
+interface Props {
+  path: string
+  label?: string
+}
+
+const formatCategories = (categories: RawCategory[]): ColorCategory[] =>
+  categories.map((category) => ({
+    title: category.name,
+    colors: category.colors,
+  }))
+
+export default function ColorPicker({ path }: Props) {
+  const { value, setValue } = useField<string>({ path })
+  const [showMore, setShowMore] = useState(false)
+
+  const categories = useMemo(() => formatCategories(rawColors as RawCategory[]), [])
+  const flatColors = useMemo(() => categories.flatMap((category) => category.colors), [categories])
+
+  const normalizedValue = typeof value === 'string' ? value.replace(/^[^-]+-/, '') : ''
+  const selected = flatColors.find((color) => color.hex === value || color.title === normalizedValue)
+
+  const primaryColors = categories[0]?.colors ?? []
+  const extraCategories = categories.slice(1)
+
+  const choose = (color: Color) => {
+    setValue(color.hex)
+  }
+
+  const Swatch = ({ color }: { color: Color }) => {
+    const isSelected = selected?.title === color.title
+
+    return (
+      <button
+        type="button"
+        onClick={() => choose(color)}
+        aria-label={`Set color to ${color.title}`}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 9999,
+          border: `2px solid ${isSelected ? '#111827' : 'transparent'}`,
+          background: color.hex,
+          cursor: 'pointer',
+        }}
+      />
+    )
+  }
+
+  if (!categories.length) {
+    return <p>Loading color palette...</p>
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Swatch color={selected || { title: 'None', hex: '#ffffff' }} />
+        <div>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>Selected</div>
+          <div style={{ fontSize: 14 }}>{selected?.title || 'None'}</div>
+        </div>
+      </div>
+
+      {selected && (
+        <button
+          type="button"
+          onClick={() => setValue('')}
+          style={{
+            width: 'fit-content',
+            padding: '6px 10px',
+            borderRadius: 6,
+            border: '1px solid #e5e7eb',
+            background: '#ffffff',
+            cursor: 'pointer',
+          }}
+        >
+          Clear Selected
+        </button>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {primaryColors.map((color) => (
+          <Swatch key={color.title} color={color} />
+        ))}
+      </div>
+
+      {extraCategories.length > 0 && (
+        <div style={{ display: 'grid', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => setShowMore((prev) => !prev)}
+            style={{
+              width: 'fit-content',
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: '1px solid #e5e7eb',
+              background: '#f9fafb',
+              cursor: 'pointer',
+            }}
+          >
+            {showMore ? 'Hide' : 'Show'} More Colors
+          </button>
+
+          {showMore && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: 12,
+                maxHeight: 320,
+                overflow: 'auto',
+                paddingRight: 4,
+              }}
+            >
+              {extraCategories.map((category) => (
+                <div key={category.title}>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
+                    {category.title}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {category.colors.map((color) => (
+                      <Swatch key={color.title} color={color} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

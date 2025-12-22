@@ -1,6 +1,12 @@
 import type { CollectionConfig, ImageUploadFormatOptions } from 'payload'
 import { authenticated } from '../access/authenticated'
+import { anyone } from '../access/anyone'
 import getAdminThumbnail from './getAdminThumbnail'
+import {
+  FixedToolbarFeature,
+  InlineToolbarFeature,
+  lexicalEditor,
+} from '@payloadcms/richtext-lexical'
 
 const formatOptions: ImageUploadFormatOptions = {
   format: 'webp',
@@ -14,7 +20,7 @@ const formatOptions: ImageUploadFormatOptions = {
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
-    read: () => true,
+    read: anyone,
     create: authenticated,
     update: authenticated,
     delete: authenticated,
@@ -24,6 +30,16 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
       required: true,
+    },
+    {
+      name: 'caption',
+      type: 'richText',
+      editor: lexicalEditor({
+        features: ({ rootFeatures }) => {
+          return [...rootFeatures, FixedToolbarFeature(), InlineToolbarFeature()]
+        },
+      }),
+      required: false,
     },
   ],
   upload: {

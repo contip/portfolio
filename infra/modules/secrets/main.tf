@@ -26,6 +26,16 @@ resource "random_password" "payload_secret" {
   special = false
 }
 
+resource "random_password" "revalidate_secret" {
+  length  = 64
+  special = false
+}
+
+resource "random_password" "preview_secret" {
+  length  = 64
+  special = false
+}
+
 ################################################################################
 # Database Secrets
 ################################################################################
@@ -69,6 +79,44 @@ resource "aws_secretsmanager_secret_version" "payload" {
 }
 
 ################################################################################
+# Revalidation Secret
+################################################################################
+
+resource "aws_secretsmanager_secret" "revalidate" {
+  name                    = "${var.name}/revalidate"
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "revalidate" {
+  secret_id = aws_secretsmanager_secret.revalidate.id
+
+  secret_string = jsonencode({
+    REVALIDATE_SECRET = random_password.revalidate_secret.result
+  })
+}
+
+################################################################################
+# Preview Secret
+################################################################################
+
+resource "aws_secretsmanager_secret" "preview" {
+  name                    = "${var.name}/preview"
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "preview" {
+  secret_id = aws_secretsmanager_secret.preview.id
+
+  secret_string = jsonencode({
+    PREVIEW_SECRET = random_password.preview_secret.result
+  })
+}
+
+################################################################################
 # IAM Policy for Secret Access
 ################################################################################
 
@@ -81,7 +129,9 @@ data "aws_iam_policy_document" "secrets_access" {
     ]
     resources = [
       aws_secretsmanager_secret.database.arn,
-      aws_secretsmanager_secret.payload.arn
+      aws_secretsmanager_secret.payload.arn,
+      aws_secretsmanager_secret.revalidate.arn,
+      aws_secretsmanager_secret.preview.arn
     ]
   }
 }

@@ -45,3 +45,9 @@ variable "bastion_cidr_blocks" {
   type        = list(string)
   default     = []
 }
+
+variable "app_stage" {
+  description = "Deployment stage used by app runtime (e.g., local, production)"
+  type        = string
+  default     = "production"
+}

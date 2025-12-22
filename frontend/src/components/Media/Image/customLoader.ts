@@ -19,7 +19,9 @@ const customImageLoader = ({ src, width, media, quality = 75 }: ImageLoaderProps
     if (src.startsWith('http')) {
       return src
     }
-    return `${process.env.NEXT_PUBLIC_SERVER_URL || ''}${src}`
+    const baseUrl =
+      process.env.NEXT_PUBLIC_PAYLOAD_API_URL || process.env.NEXT_PUBLIC_SERVER_URL || ''
+    return `${baseUrl}${src}`
   }
 
   // Get the appropriate size name based on requested width

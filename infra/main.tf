@@ -287,8 +287,32 @@ module "opennext_frontend" {
   # Note: NEXT_PUBLIC_* vars are baked in at build time, not runtime.
   server_function = {
     additional_environment_variables = {
-      PAYLOAD_API_URL = "https://api.${var.domain_name}"
+      PAYLOAD_API_URL             = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_PAYLOAD_API_URL = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_SERVER_URL      = "https://api.${var.domain_name}"
+      FRONTEND_URL                = "https://${var.domain_name}"
+      REVALIDATE_SECRET           = module.secrets.revalidate_secret
+      PREVIEW_SECRET              = module.secrets.preview_secret
+      APP_STAGE                   = var.app_stage
     }
+    additional_iam_policies = [
+      {
+        name = "${local.name}-frontend-cloudfront-invalidation"
+        policy = jsonencode({
+          Version = "2012-10-17"
+          Statement = [
+            {
+              Effect = "Allow"
+              Action = [
+                "cloudfront:CreateInvalidation",
+                "cloudfront:ListDistributions"
+              ]
+              Resource = "*"
+            }
+          ]
+        })
+      }
+    ]
   }
 
   # Provider configuration - OpenNext requires multiple provider aliases
@@ -339,6 +363,13 @@ module "opennext_backend" {
       # Database configuration
       DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
       PAYLOAD_SECRET = module.secrets.payload_secret
+      PAYLOAD_PUBLIC_SERVER_URL = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_SERVER_URL    = "https://api.${var.domain_name}"
+      PUBLIC_URL                = "https://${var.domain_name}"
+      FRONTEND_URL              = "https://${var.domain_name}"
+      REVALIDATE_SECRET         = module.secrets.revalidate_secret
+      PREVIEW_SECRET            = module.secrets.preview_secret
+      APP_STAGE                 = var.app_stage
 
       # S3 Storage configuration for Payload CMS
       S3_BUCKET            = module.media_storage.s3_bucket

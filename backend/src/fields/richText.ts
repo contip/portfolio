@@ -113,7 +113,7 @@ const richText: RichText = (
           },
         }),
         LinkFeature({
-          enabledCollections: ['lizards'],
+          enabledCollections: ['lizards', 'categories', 'posts', 'pages', 'services'],
           fields: ({ defaultFields }) => {
             const defaultFieldsWithoutUrl = defaultFields.filter((field) => {
               if ('name' in field && field.name === 'url') return false

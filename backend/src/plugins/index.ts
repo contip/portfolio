@@ -2,6 +2,8 @@ import { Plugin } from 'payload'
 import { FormBuilderPlugin } from './form-builder'
 import { S3StoragePlugin } from './s3'
 import { PayloadAiPlugin } from './ai'
+import { SEOPlugin } from './seo'
+import { NestedDocsPlugin } from './nested-docs'
 
 /**
  * Payload CMS Plugins
@@ -11,4 +13,18 @@ import { PayloadAiPlugin } from './ai'
  * cloud storage in deployed environments.
  */
 
-export const plugins: Plugin[] = [FormBuilderPlugin, S3StoragePlugin, PayloadAiPlugin]
+const hasS3Config = Boolean(
+  process.env.S3_BUCKET &&
+    process.env.S3_ACCESS_KEY_ID &&
+    process.env.S3_SECRET_ACCESS_KEY &&
+    process.env.S3_REGION &&
+    process.env.CLOUDFRONT_DOMAIN,
+)
+
+export const plugins: Plugin[] = [
+  FormBuilderPlugin,
+  SEOPlugin,
+  NestedDocsPlugin,
+  ...(hasS3Config ? [S3StoragePlugin] : []),
+  PayloadAiPlugin,
+]

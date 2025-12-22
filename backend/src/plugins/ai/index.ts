@@ -3,8 +3,12 @@ import { payloadAiPlugin } from '@ai-stack/payloadcms'
 
 export const PayloadAiPlugin: Plugin = payloadAiPlugin({
   collections: {
+    pages: true,
+    posts: true,
+    categories: true,
+    services: true,
     lizards: true,
   },
   // debugging: true,
-  generatePromptOnInit: false,
+  generatePromptOnInit: process.env.NODE_ENV !== 'production',
 })
