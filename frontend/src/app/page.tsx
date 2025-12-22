@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPayloadHealth, getLizards, PAYLOAD_API_URL } from "@/lib/payload";
 import { ExternalLink, Server, Database, Globe, Code2, Cloud } from "lucide-react";
+import { Media } from "@/components/Media";
+import type { Media as MediaType } from "@/types/payload-types";
 
 export const dynamic = "force-dynamic";
 
@@ -99,9 +101,23 @@ export default async function Home() {
           {lizards.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {lizards.slice(0, 3).map((lizard) => (
-                <Card key={lizard.id} className="hover:border-primary/50 transition-colors">
+                <Card key={lizard.id} className="hover:border-primary/50 transition-colors overflow-hidden">
                   <Link href={`/lizards/${lizard.slug}`}>
-                    <CardHeader>
+                    {lizard.image && typeof lizard.image === "object" ? (
+                      <div className="relative aspect-4/3 w-full bg-muted">
+                        <Media
+                          resource={lizard.image as MediaType}
+                          fill
+                          imgClassName="object-cover"
+                          size="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-4/3 w-full bg-muted flex items-center justify-center">
+                        <span className="text-4xl">🦎</span>
+                      </div>
+                    )}
+                    <CardHeader className="pt-3">
                       <CardTitle className="text-base">{lizard.name}</CardTitle>
                       <CardDescription>
                         {getSpeciesLabel(lizard.species)}

@@ -45,5 +45,11 @@ export const Lizards: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
     },
+    {
+      name: 'additionalImages',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+    },
   ],
 }

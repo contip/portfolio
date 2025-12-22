@@ -7,6 +7,7 @@ import { getLizardBySlug, getLizards } from "@/lib/payload";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { Media } from "@/components/Media";
 import type { Media as MediaType } from "@/types/payload-types";
+import { ImageSlider } from "./ImageSlider";
 
 export const dynamic = "force-dynamic";
 
@@ -50,24 +51,23 @@ export default async function LizardPage({ params }: LizardPageProps) {
         </Button>
 
         <Card className="overflow-hidden">
-          {lizard.image && typeof lizard.image === "object" && (
-            <div className="relative aspect-video w-full">
+          {lizard.image && typeof lizard.image === "object" ? (
+            <div className="relative aspect-square sm:aspect-4/3 w-full bg-muted">
               <Media
                 resource={lizard.image as MediaType}
                 fill
-                imgClassName="object-contain"
+                imgClassName="object-cover"
                 size="(max-width: 768px) 100vw, 768px"
                 priority
               />
             </div>
+          ) : (
+            <div className="aspect-square sm:aspect-4/3 w-full bg-muted flex items-center justify-center">
+              <span className="text-8xl">🦎</span>
+            </div>
           )}
           <CardHeader>
             <div className="flex items-center gap-4 mb-2">
-              {(!lizard.image || typeof lizard.image !== "object") && (
-                <div className="p-3 rounded-full bg-primary/10 text-2xl">
-                  🦎
-                </div>
-              )}
               <div>
                 <CardTitle className="text-3xl">{lizard.name}</CardTitle>
                 <Badge variant="secondary" className="mt-1">
@@ -86,6 +86,17 @@ export default async function LizardPage({ params }: LizardPageProps) {
                     <p className="font-medium">{lizard.age} years old</p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {lizard.additionalImages && lizard.additionalImages.length > 0 && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-sm font-medium mb-4">Gallery</h3>
+                <ImageSlider
+                  images={lizard.additionalImages.filter(
+                    (img): img is MediaType => typeof img === "object"
+                  )}
+                />
               </div>
             )}
 

@@ -863,6 +863,7 @@ export interface Lizard {
   generateSlug?: boolean | null;
   slug: string;
   image?: (number | null) | Media;
+  additionalImages?: (number | Media)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1374,6 +1375,7 @@ export interface LizardsSelect<T extends boolean = true> {
   generateSlug?: T;
   slug?: T;
   image?: T;
+  additionalImages?: T;
   updatedAt?: T;
   createdAt?: T;
 }
