@@ -1,4 +1,5 @@
 import type { Lizard } from "@/types/payload-types";
+import { cacheTag } from "next/cache";
 
 // NEXT_PUBLIC_PAYLOAD_API_URL is baked in at build time for client-side code
 // PAYLOAD_API_URL is the runtime env var for server-side code (Lambda)
@@ -48,7 +49,9 @@ async function fetchPayload<T>(
 
 export async function getLizards(): Promise<Lizard[]> {
   try {
-    const response = await fetchPayload<PayloadListResponse<Lizard>>("/lizards");
+    const response = await fetchPayload<PayloadListResponse<Lizard>>(
+      "/lizards"
+    );
     return response.docs;
   } catch (error) {
     console.error("Failed to fetch lizards:", error);
@@ -81,5 +84,16 @@ export async function getPayloadHealth(): Promise<boolean> {
     return false;
   }
 }
+
+// export async function getCachedDocument<T>(
+//   collection: string,
+//   depth: number,
+//   slug?: string,
+//   id?: string,
+//   select?: { [k: string]: true }
+// ): Promise<T | null> {
+//   "use cache";
+//   const params = new URLSearchParams();
+// }
 
 export { PAYLOAD_API_URL };
