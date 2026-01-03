@@ -1,117 +1,131 @@
-import { CloudFrontClient, CreateInvalidationCommand, ListDistributionsCommand } from '@aws-sdk/client-cloudfront'
-import { revalidatePath, revalidateTag } from 'next/cache'
-import { NextRequest, NextResponse } from 'next/server'
-
-export const runtime = 'nodejs'
+import {
+  CloudFrontClient,
+  CreateInvalidationCommand,
+  ListDistributionsCommand,
+} from "@aws-sdk/client-cloudfront";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
 
 type RevalidateBody = {
-  paths?: string[]
-  tags?: string[]
-}
+  paths?: string[];
+  tags?: string[];
+};
 
-const normalizePath = (path: string): string => (path.startsWith('/') ? path : `/${path}`)
+const normalizePath = (path: string): string =>
+  path.startsWith("/") ? path : `/${path}`;
 
-const buildCloudFrontPaths = (paths: string[] = [], tags: string[] = []): string[] => {
-  const output = new Set<string>()
+const buildCloudFrontPaths = (
+  paths: string[] = [],
+  tags: string[] = []
+): string[] => {
+  const output = new Set<string>();
 
   paths.forEach((path) => {
-    if (!path) return
-    output.add(normalizePath(path))
-  })
+    if (!path) return;
+    output.add(normalizePath(path));
+  });
 
   tags
     .map((tag) => tag.trim())
     .filter(Boolean)
     .forEach((tag) => {
-      if (tag.startsWith('category:')) {
-        const slug = tag.split('category:')[1]
-        if (slug) output.add(`/posts/category/${slug}/*`)
+      if (tag.startsWith("category:")) {
+        const slug = tag.split("category:")[1];
+        if (slug) output.add(`/posts/category/${slug}/*`);
       }
-      if (tag === 'static-sitemap') {
-        output.add('/sitemap.xml')
-        output.add('/sitemap.xml.gz')
+      if (tag === "static-sitemap") {
+        output.add("/sitemap.xml");
+        output.add("/sitemap.xml.gz");
       }
-      if (tag === 'global_nav' || tag === 'global_footer') {
-        output.add('/*')
+      if (tag === "global_nav" || tag === "global_footer") {
+        output.add("/*");
       }
-    })
+    });
 
-  return Array.from(output)
-}
+  return Array.from(output);
+};
 
-const resolveDistributionId = async (client: CloudFrontClient): Promise<string | null> => {
-  const directId = process.env.CLOUDFRONT_ID || process.env.CLOUDFRONT_DISTRIBUTION_ID
-  if (directId) return directId
+const resolveDistributionId = async (
+  client: CloudFrontClient
+): Promise<string | null> => {
+  const directId =
+    process.env.CLOUDFRONT_ID || process.env.CLOUDFRONT_DISTRIBUTION_ID;
+  if (directId) return directId;
 
-  const frontendUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || ''
-  const host = frontendUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
-  if (!host) return null
+  const frontendUrl =
+    process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
+  const host = frontendUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (!host) return null;
 
-  let marker: string | undefined
+  let marker: string | undefined;
 
   do {
-    const response = await client.send(new ListDistributionsCommand({ Marker: marker }))
-    const list = response.DistributionList
-    const items = list?.Items || []
+    const response = await client.send(
+      new ListDistributionsCommand({ Marker: marker })
+    );
+    const list = response.DistributionList;
+    const items = list?.Items || [];
 
     const match = items.find((distribution) => {
-      if (distribution.DomainName === host) return true
-      const aliases = distribution.Aliases?.Items || []
-      return aliases.includes(host)
-    })
+      if (distribution.DomainName === host) return true;
+      const aliases = distribution.Aliases?.Items || [];
+      return aliases.includes(host);
+    });
 
-    if (match?.Id) return match.Id
+    if (match?.Id) return match.Id;
 
-    marker = list?.NextMarker
-  } while (marker)
+    marker = list?.NextMarker;
+  } while (marker);
 
-  return null
-}
+  return null;
+};
 
 const shouldInvalidateCloudFront = (): boolean => {
-  return process.env.APP_STAGE === 'production'
-}
+  return process.env.APP_STAGE === "production";
+};
 
 export async function POST(request: NextRequest) {
-  const secret = process.env.REVALIDATE_SECRET
+  const secret = process.env.REVALIDATE_SECRET;
   const providedSecret =
-    request.headers.get('x-revalidate-secret') ||
-    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    request.headers.get("x-revalidate-secret") ||
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
   if (!secret || providedSecret !== secret) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  let body: RevalidateBody
+  let body: RevalidateBody;
   try {
-    body = (await request.json()) as RevalidateBody
+    body = (await request.json()) as RevalidateBody;
   } catch {
-    return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
+    return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
 
-  const paths = Array.isArray(body.paths) ? body.paths : []
-  const tags = Array.isArray(body.tags) ? body.tags : []
+  const paths = Array.isArray(body.paths) ? body.paths : [];
+  const tags = Array.isArray(body.tags) ? body.tags : [];
 
   paths.forEach((path) => {
-    revalidatePath(normalizePath(path))
-  })
+    revalidatePath(normalizePath(path));
+  });
 
-  const tagProfile = { expire: 0 }
+  const tagProfile = { expire: 0 };
   tags.forEach((tag) => {
-    revalidateTag(tag, tagProfile)
-  })
+    revalidateTag(tag, tagProfile);
+  });
 
-  const cfPaths = buildCloudFrontPaths(paths, tags)
+  const cfPaths = buildCloudFrontPaths(paths, tags);
 
-  let cloudfrontInvalidationId: string | null = null
+  let cloudfrontInvalidationId: string | null = null;
 
   if (cfPaths.length > 0 && shouldInvalidateCloudFront()) {
     try {
-      const client = new CloudFrontClient({})
-      const distributionId = await resolveDistributionId(client)
+      const client = new CloudFrontClient({});
+      const distributionId = await resolveDistributionId(client);
 
       if (!distributionId) {
-        console.warn('CloudFront invalidation skipped: distribution ID not found')
+        console.warn(
+          "CloudFront invalidation skipped: distribution ID not found"
+        );
       } else {
         const response = await client.send(
           new CreateInvalidationCommand({
@@ -123,13 +137,13 @@ export async function POST(request: NextRequest) {
                 Items: cfPaths,
               },
             },
-          }),
-        )
+          })
+        );
 
-        cloudfrontInvalidationId = response.Invalidation?.Id || null
+        cloudfrontInvalidationId = response.Invalidation?.Id || null;
       }
     } catch (error) {
-      console.error('CloudFront invalidation failed:', error)
+      console.error("CloudFront invalidation failed:", error);
     }
   }
 
@@ -138,5 +152,5 @@ export async function POST(request: NextRequest) {
     pathsRevalidated: paths.length,
     tagsRevalidated: tags.length,
     cloudfrontInvalidationId,
-  })
+  });
 }

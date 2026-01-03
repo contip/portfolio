@@ -1,13 +1,28 @@
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getPayloadHealth, getCachedCollection, PAYLOAD_API_URL } from "@/lib/payload";
-import { ExternalLink, Server, Database, Globe, Code2, Cloud } from "lucide-react";
+import {
+  getPayloadHealth,
+  getCachedCollection,
+  PAYLOAD_API_URL,
+} from "@/lib/payload";
+import {
+  ExternalLink,
+  Server,
+  Database,
+  Globe,
+  Code2,
+  Cloud,
+} from "lucide-react";
 import { Media } from "@/components/Media";
 import type { Lizard, Media as MediaType } from "@/types/payload-types";
-
-export const dynamic = "force-dynamic";
 
 const speciesLabels: Record<string, string> = {
   sagrei: "Cuban Brown Anole",
@@ -27,11 +42,31 @@ export default async function Home() {
   ]);
 
   const techStack = [
-    { name: "Next.js 16", description: "React framework with App Router", icon: Code2 },
-    { name: "React 19", description: "UI library with Server Components", icon: Code2 },
-    { name: "Payload CMS", description: "Headless CMS for content", icon: Database },
-    { name: "AWS Lambda", description: "Serverless compute via OpenNext", icon: Cloud },
-    { name: "CloudFront", description: "Global CDN for edge delivery", icon: Globe },
+    {
+      name: "Next.js 16",
+      description: "React framework with App Router",
+      icon: Code2,
+    },
+    {
+      name: "React 19",
+      description: "UI library with Server Components",
+      icon: Code2,
+    },
+    {
+      name: "Payload CMS",
+      description: "Headless CMS for content",
+      icon: Database,
+    },
+    {
+      name: "AWS Lambda",
+      description: "Serverless compute via OpenNext",
+      icon: Cloud,
+    },
+    {
+      name: "CloudFront",
+      description: "Global CDN for edge delivery",
+      icon: Globe,
+    },
     { name: "RDS PostgreSQL", description: "Managed database", icon: Database },
     { name: "Terraform", description: "Infrastructure as Code", icon: Server },
   ];
@@ -45,8 +80,9 @@ export default async function Home() {
             Portfolio Infrastructure
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
-            A full-stack portfolio application demonstrating modern cloud architecture
-            with Next.js, Payload CMS, and AWS infrastructure managed by Terraform.
+            A full-stack portfolio application demonstrating modern cloud
+            architecture with Next.js, Payload CMS, and AWS infrastructure
+            managed by Terraform.
           </p>
         </section>
 
@@ -57,28 +93,45 @@ export default async function Home() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Frontend (Next.js)</CardTitle>
-                  <Badge variant="default" className="bg-green-600">Healthy</Badge>
+                  <CardTitle className="text-base">
+                    Frontend (Next.js)
+                  </CardTitle>
+                  <Badge variant="default" className="bg-green-600">
+                    Healthy
+                  </Badge>
                 </div>
-                <CardDescription>Running on AWS Lambda via OpenNext</CardDescription>
+                <CardDescription>
+                  Running on AWS Lambda via OpenNext
+                </CardDescription>
               </CardHeader>
             </Card>
 
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Backend (Payload CMS)</CardTitle>
-                  <Badge variant={payloadHealthy ? "default" : "destructive"} className={payloadHealthy ? "bg-green-600" : ""}>
+                  <CardTitle className="text-base">
+                    Backend (Payload CMS)
+                  </CardTitle>
+                  <Badge
+                    variant={payloadHealthy ? "default" : "destructive"}
+                    className={payloadHealthy ? "bg-green-600" : ""}
+                  >
                     {payloadHealthy ? "Healthy" : "Unhealthy"}
                   </Badge>
                 </div>
                 <CardDescription>
-                  {payloadHealthy ? "API responding normally" : "API not responding"}
+                  {payloadHealthy
+                    ? "API responding normally"
+                    : "API not responding"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" size="sm" asChild>
-                  <a href={`${PAYLOAD_API_URL}/admin`} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={`${PAYLOAD_API_URL}/admin`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Open Admin <ExternalLink className="ml-2 h-3 w-3" />
                   </a>
                 </Button>
@@ -101,7 +154,10 @@ export default async function Home() {
           {lizards.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {lizards.slice(0, 3).map((lizard) => (
-                <Card key={lizard.id} className="hover:border-primary/50 transition-colors overflow-hidden">
+                <Card
+                  key={lizard.id}
+                  className="hover:border-primary/50 transition-colors overflow-hidden"
+                >
                   <Link href={`/lizards/${lizard.slug}`}>
                     {lizard.image && typeof lizard.image === "object" ? (
                       <div className="relative aspect-4/3 w-full bg-muted">
@@ -131,12 +187,15 @@ export default async function Home() {
           ) : (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
-                <div className="mx-auto h-12 w-12 text-muted-foreground mb-4 text-3xl">🦎</div>
+                <div className="mx-auto h-12 w-12 text-muted-foreground mb-4 text-3xl">
+                  🦎
+                </div>
                 <p className="text-muted-foreground mb-2">
                   No lizards found in the database yet.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Create a lizard in Payload Admin with fields: name, slug, species, age
+                  Create a lizard in Payload Admin with fields: name, slug,
+                  species, age
                 </p>
               </CardContent>
             </Card>
@@ -158,7 +217,9 @@ export default async function Home() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-muted-foreground">{tech.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {tech.description}
+                    </p>
                   </CardContent>
                 </Card>
               );
