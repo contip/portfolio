@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getPayloadHealth, getLizards, PAYLOAD_API_URL } from "@/lib/payload";
+import { getPayloadHealth, getCachedCollection, PAYLOAD_API_URL } from "@/lib/payload";
 import { ExternalLink, Server, Database, Globe, Code2, Cloud } from "lucide-react";
 import { Media } from "@/components/Media";
-import type { Media as MediaType } from "@/types/payload-types";
+import type { Lizard, Media as MediaType } from "@/types/payload-types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +21,9 @@ function getSpeciesLabel(species: string | null | undefined): string {
 }
 
 export default async function Home() {
-  const [payloadHealthy, lizards] = await Promise.all([
+  const [payloadHealthy, { docs: lizards }] = await Promise.all([
     getPayloadHealth(),
-    getLizards(),
+    getCachedCollection<Lizard>("lizards"),
   ]);
 
   const techStack = [

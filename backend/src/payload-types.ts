@@ -866,6 +866,7 @@ export interface Lizard {
   additionalImages?: (number | Media)[] | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1378,6 +1379,7 @@ export interface LizardsSelect<T extends boolean = true> {
   additionalImages?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

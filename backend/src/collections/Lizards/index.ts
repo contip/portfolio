@@ -52,4 +52,7 @@ export const Lizards: CollectionConfig = {
       hasMany: true,
     },
   ],
+  versions: {
+    drafts: true,
+  },
 }

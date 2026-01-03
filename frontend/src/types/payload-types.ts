@@ -866,6 +866,7 @@ export interface Lizard {
   additionalImages?: (number | Media)[] | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1378,6 +1379,7 @@ export interface LizardsSelect<T extends boolean = true> {
   additionalImages?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1818,4 +1820,30 @@ export interface MediaGridBlock {
  */
 export interface Auth {
   [k: string]: unknown;
+}
+
+// Payload query types (re-exported for frontend use)
+type Operator =
+  | 'contains'
+  | 'equals'
+  | 'exists'
+  | 'greater_than'
+  | 'greater_than_equal'
+  | 'in'
+  | 'less_than'
+  | 'less_than_equal'
+  | 'like'
+  | 'not_equals'
+  | 'not_in'
+  | 'near'
+  | 'within'
+  | 'intersects'
+  | 'all'
+
+type WhereField = {
+  [key in Operator]?: unknown
+}
+
+export type Where = {
+  [key: string]: Where[] | WhereField | undefined
 }

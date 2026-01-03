@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getLizards } from "@/lib/payload";
+import { getCachedCollection } from "@/lib/payload";
 import { ArrowLeft } from "lucide-react";
 import { Media } from "@/components/Media";
-import type { Media as MediaType } from "@/types/payload-types";
-
-export const dynamic = "force-dynamic";
+import type { Lizard, Media as MediaType } from "@/types/payload-types";
 
 const speciesLabels: Record<string, string> = {
   sagrei: "Cuban Brown Anole",
@@ -21,7 +25,7 @@ function getSpeciesLabel(species: string | null | undefined): string {
 }
 
 export default async function LizardsPage() {
-  const lizards = await getLizards();
+  const { docs: lizards } = await getCachedCollection<Lizard>("lizards");
 
   return (
     <div className="min-h-screen">
@@ -41,9 +45,12 @@ export default async function LizardsPage() {
         {lizards.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lizards.map((lizard) => (
-              <Card key={lizard.id} className="hover:border-primary/50 transition-colors overflow-hidden">
+              <Card
+                key={lizard.id}
+                className="hover:border-primary/50 transition-colors overflow-hidden"
+              >
                 <Link href={`/lizards/${lizard.slug}`}>
-                  {lizard.image && typeof lizard.image === 'object' && (
+                  {lizard.image && typeof lizard.image === "object" && (
                     <div className="relative aspect-4/3 w-full">
                       <Media
                         resource={lizard.image as MediaType}
@@ -56,7 +63,9 @@ export default async function LizardsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>{lizard.name}</CardTitle>
-                      <Badge variant="secondary">{getSpeciesLabel(lizard.species)}</Badge>
+                      <Badge variant="secondary">
+                        {getSpeciesLabel(lizard.species)}
+                      </Badge>
                     </div>
                     <CardDescription>
                       A lovely {getSpeciesLabel(lizard.species).toLowerCase()}
@@ -74,10 +83,13 @@ export default async function LizardsPage() {
         ) : (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
-              <div className="mx-auto h-16 w-16 text-muted-foreground mb-4 text-4xl">🦎</div>
+              <div className="mx-auto h-16 w-16 text-muted-foreground mb-4 text-4xl">
+                🦎
+              </div>
               <h2 className="text-xl font-semibold mb-2">No lizards found</h2>
               <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                The lizards collection is empty. Create some lizards in the Payload admin panel to see them here.
+                The lizards collection is empty. Create some lizards in the
+                Payload admin panel to see them here.
               </p>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p className="font-medium">Required fields:</p>

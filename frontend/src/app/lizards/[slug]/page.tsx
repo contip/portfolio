@@ -3,13 +3,11 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getLizardBySlug, getLizards } from "@/lib/payload";
+import { getCachedCollection, getCachedDocument } from "@/lib/payload";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { Media } from "@/components/Media";
-import type { Media as MediaType } from "@/types/payload-types";
+import type { Lizard, Media as MediaType } from "@/types/payload-types";
 import { ImageSlider } from "./ImageSlider";
-
-export const dynamic = "force-dynamic";
 
 interface LizardPageProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +25,7 @@ function getSpeciesLabel(species: string | null | undefined): string {
 }
 
 export async function generateStaticParams() {
-  const lizards = await getLizards();
+  const { docs: lizards } = await getCachedCollection<Lizard>("lizards");
   return lizards.map((lizard) => ({
     slug: lizard.slug,
   }));
@@ -35,7 +33,7 @@ export async function generateStaticParams() {
 
 export default async function LizardPage({ params }: LizardPageProps) {
   const { slug } = await params;
-  const lizard = await getLizardBySlug(slug);
+  const lizard = await getCachedDocument<Lizard>("lizards", slug);
 
   if (!lizard) {
     notFound();
