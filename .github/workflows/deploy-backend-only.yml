@@ -1,0 +1,144 @@
+name: Deploy Backend Only
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: "20"
+  TERRAFORM_VERSION: "1.9.0"
+
+jobs:
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: "backend/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Payload with OpenNext
+        working-directory: ./backend
+        env:
+          DATABASE_URI: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          PAYLOAD_SECRET: build-time-placeholder-secret-minimum-length
+        run: |
+          set -euo pipefail
+          echo "Building Payload application..."
+          pnpm build
+          echo "Building OpenNext package for AWS Lambda..."
+          pnpm dlx @opennextjs/aws build
+          echo "OpenNext build complete"
+          ls -la .open-next/
+
+      - name: Upload OpenNext backend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opennext-backend-build
+          path: backend/.open-next
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-backend:
+    name: Deploy Backend Infrastructure
+    runs-on: ubuntu-latest
+    needs: [build-backend]
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      api_url: ${{ steps.outputs.outputs.api_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download OpenNext backend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opennext-backend-build
+          path: backend/.open-next
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Create terraform.tfvars
+        working-directory: ./infra
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.TFVARS_CONTENT_DEV_B64 }}" | base64 -d > terraform.tfvars
+          tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
+          echo "terraform.tfvars created ($(wc -l < terraform.tfvars) lines)"
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init -input=false
+
+      - name: Deploy Backend Only
+        working-directory: ./infra
+        run: |
+          set -euo pipefail
+
+          # Target only backend-related resources
+          terraform apply -auto-approve -input=false \
+            -var-file=terraform.tfvars \
+            -target=module.backend
+
+      - name: Get Terraform outputs
+        id: outputs
+        working-directory: ./infra
+        run: |
+          echo "api_url=$(terraform output -raw payload_url)" >> "$GITHUB_OUTPUT"
+
+  health-check:
+    name: Backend Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-backend]
+
+    steps:
+      - name: Wait for propagation
+        run: sleep 30
+
+      - name: Check API health
+        run: |
+          set -euo pipefail
+          API_URL="${{ needs.deploy-backend.outputs.api_url }}"
+          ADMIN_URL="${API_URL}/admin"
+          echo "Testing Payload admin: $ADMIN_URL"
+
+          for i in {1..5}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$ADMIN_URL" || echo "000")
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 302 ]; then
+              echo "✓ API health check passed (HTTP $HTTP_CODE)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $HTTP_CODE, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "::warning::API health check returned HTTP $HTTP_CODE"
