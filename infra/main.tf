@@ -360,6 +360,9 @@ module "opennext_backend" {
   # Server function configuration with database and S3 environment variables
   server_function = {
     additional_environment_variables = {
+      # Node environment - required for Payload prodMigrations to run
+      NODE_ENV = "production"
+
       # Database configuration
       DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
       PAYLOAD_SECRET = module.secrets.payload_secret

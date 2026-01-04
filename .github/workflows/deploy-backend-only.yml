@@ -117,7 +117,7 @@ jobs:
           # Target only backend-related resources
           terraform apply -auto-approve -input=false \
             -var-file=terraform.tfvars \
-            -target=module.backend
+            -target=module.opennext_backend
 
       - name: Get Terraform outputs
         id: outputs
