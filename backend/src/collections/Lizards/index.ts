@@ -1,5 +1,6 @@
 import { slugField, type CollectionConfig } from 'payload'
 import { authenticated } from '../access/authenticated'
+import { revalidateLizard, revalidateDelete } from './hooks/revalidateLizard'
 
 export const Lizards: CollectionConfig = {
   slug: 'lizards',
@@ -8,6 +9,10 @@ export const Lizards: CollectionConfig = {
     create: authenticated,
     update: authenticated,
     delete: authenticated,
+  },
+  hooks: {
+    afterChange: [revalidateLizard],
+    afterDelete: [revalidateDelete],
   },
   fields: [
     {
