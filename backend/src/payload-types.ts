@@ -1646,11 +1646,8 @@ export interface Footer {
  */
 export interface Nav {
   id: number;
-  logo?: (number | null) | Media;
-  /**
-   * Square: w-24 h-24, Rectangular: w-72 h-24
-   */
-  logoType?: ('square' | 'rectangular') | null;
+  logoLight?: (number | null) | Media;
+  logoDark?: (number | null) | Media;
   navItems?:
     | {
         type?: ('link' | 'dropdown') | null;
@@ -1750,8 +1747,8 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "nav_select".
  */
 export interface NavSelect<T extends boolean = true> {
-  logo?: T;
-  logoType?: T;
+  logoLight?: T;
+  logoDark?: T;
   navItems?:
     | T
     | {

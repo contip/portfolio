@@ -12,28 +12,18 @@ const Nav: GlobalConfig = {
   },
   fields: [
     {
-      name: 'logo',
+      name: 'logoLight',
+      label: 'Logo Light',
       type: 'upload',
       hasMany: false,
       relationTo: 'media',
     },
     {
-      name: 'logoType',
-      type: 'radio',
-      options: [
-        {
-          label: 'Square',
-          value: 'square',
-        },
-        {
-          label: 'Rectangular',
-          value: 'rectangular',
-        },
-      ],
-      defaultValue: 'rectangular',
-      admin: {
-        description: 'Square: w-24 h-24, Rectangular: w-72 h-24',
-      },
+      name: 'logoDark',
+      label: 'Logo Dark',
+      type: 'upload',
+      hasMany: false,
+      relationTo: 'media',
     },
     {
       name: 'navItems',
