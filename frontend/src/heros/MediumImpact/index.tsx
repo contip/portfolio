@@ -38,12 +38,12 @@ const MediumImpactHero: React.FC<MediumImpactHeroProps> = ({
         <div className="absolute inset-0 z-0">
           <Media
             fill
-            imgClassName="object-cover brightness-[0.55]"
+            imgClassName="object-cover brightness-[0.7]"
             priority
             resource={media as MediaType}
           />
-          {/* Gradient overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
+          {/* Lighter gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-black/25" />
         </div>
       )}
 
@@ -102,9 +102,9 @@ const MediumImpactHero: React.FC<MediumImpactHeroProps> = ({
         </div>
       </div>
 
-      {/* Bottom fade for smooth transition to content */}
+      {/* Bottom fade for smooth transition - uses black since hero is dark themed */}
       {hasMedia && (
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent" />
       )}
     </section>
   );

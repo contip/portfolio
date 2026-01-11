@@ -57,14 +57,13 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
           <div className="absolute inset-0 scale-110">
             <Media
               fill
-              imgClassName="object-cover brightness-[0.45]"
+              imgClassName="object-cover brightness-[0.7]"
               priority
               resource={media as MediaType}
             />
           </div>
-          {/* Multi-layer gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/50" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+          {/* Lighter gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/30" />
         </motion.div>
       )}
 
@@ -135,9 +134,9 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
       {/* Scroll indicator - mobile only */}
       <ScrollIndicator className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 md:hidden" />
 
-      {/* Bottom fade for smooth transition */}
+      {/* Bottom fade for smooth transition - uses black since hero is dark themed */}
       {hasMedia && (
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/50 to-transparent" />
       )}
     </section>
   );
