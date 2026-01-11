@@ -51,3 +51,28 @@ variable "app_stage" {
   type        = string
   default     = "production"
 }
+
+################################################################################
+# AI API Keys (for Payload CMS AI features)
+################################################################################
+
+variable "openai_api_key" {
+  description = "OpenAI API key for AI features"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "google_generative_ai_api_key" {
+  description = "Google Generative AI API key for AI features"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "anthropic_api_key" {
+  description = "Anthropic API key for AI features"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

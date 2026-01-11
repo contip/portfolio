@@ -381,6 +381,11 @@ module "opennext_backend" {
       S3_SECRET_ACCESS_KEY = module.media_storage.s3_secret_access_key
       S3_REGION            = module.media_storage.s3_region
       CLOUDFRONT_DOMAIN    = module.media_storage.media_url
+
+      # AI API Keys
+      OPENAI_API_KEY              = var.openai_api_key
+      GOOGLE_GENERATIVE_AI_API_KEY = var.google_generative_ai_api_key
+      ANTHROPIC_API_KEY           = var.anthropic_api_key
     }
     # VPC configuration so Lambda can reach RDS
     vpc = {

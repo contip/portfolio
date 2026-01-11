@@ -77,6 +77,7 @@ export interface Config {
     lizards: Lizard;
     forms: Form;
     'form-submissions': FormSubmission;
+    'plugin-ai-instructions': PluginAiInstruction;
     redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -99,6 +100,7 @@ export interface Config {
     lizards: LizardsSelect<false> | LizardsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
+    'plugin-ai-instructions': PluginAiInstructionsSelect<false> | PluginAiInstructionsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -899,6 +901,170 @@ export interface FormSubmission {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugin-ai-instructions".
+ */
+export interface PluginAiInstruction {
+  id: number;
+  /**
+   * Please don't change this unless you're sure of what you're doing
+   */
+  'schema-path'?: string | null;
+  /**
+   * Please don't change this unless you're sure of what you're doing
+   */
+  'field-type'?: ('text' | 'textarea' | 'upload' | 'richText') | null;
+  'relation-to'?: string | null;
+  'model-id'?:
+    | (
+        | 'Oai-text'
+        | 'dall-e'
+        | 'gpt-image-1'
+        | 'tts'
+        | 'Oai-object'
+        | 'ANTH-C-text'
+        | 'ANTH-C-object'
+        | 'GEMINI-text'
+        | 'GEMINI-object'
+        | 'imagen'
+      )
+    | null;
+  /**
+   * Please reload your collection after applying the changes
+   */
+  disabled?: boolean | null;
+  /**
+   * Click 'Compose' to run this custom prompt and generate content
+   */
+  prompt?: string | null;
+  images?:
+    | {
+        /**
+         * Please make sure the image is publicly accessible.
+         */
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  system?: string | null;
+  layout?: string | null;
+  'Oai-text-settings'?: {
+    model?:
+      | ('gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'gpt-4.1' | 'gpt-4o' | 'gpt-4-turbo' | 'gpt-4o-mini' | 'gpt-3.5-turbo')
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'dalle-e-settings'?: {
+    version?: ('dall-e-3' | 'dall-e-2') | null;
+    size?: ('256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792') | null;
+    style?: ('vivid' | 'natural') | null;
+    'enable-prompt-optimization'?: boolean | null;
+  };
+  'gpt-image-1-settings'?: {
+    version?: 'gpt-image-1' | null;
+    size?: ('1024x1024' | '1024x1536' | '1536x1024' | 'auto') | null;
+    quality?: ('low' | 'medium' | 'high' | 'auto') | null;
+    output_format?: ('png' | 'jpeg' | 'webp') | null;
+    output_compression?: number | null;
+    background?: ('white' | 'transparent') | null;
+    moderation?: ('auto' | 'low') | null;
+  };
+  'Oai-tts-settings'?: {
+    voice?: ('alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') | null;
+    model?: ('tts-1' | 'tts-1-hd') | null;
+    response_format?: ('mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm') | null;
+    speed?: number | null;
+  };
+  'Oai-object-settings'?: {
+    model?:
+      | ('gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'gpt-4.1' | 'gpt-4o' | 'gpt-4-turbo' | 'gpt-4o-mini' | 'gpt-3.5-turbo')
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'ANTH-C-text-settings'?: {
+    model?:
+      | (
+          | 'claude-opus-4-1'
+          | 'claude-opus-4-0'
+          | 'claude-sonnet-4-0'
+          | 'claude-3-opus-latest'
+          | 'claude-3-5-haiku-latest'
+          | 'claude-3-5-sonnet-latest'
+          | 'claude-3-7-sonnet-latest'
+        )
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'ANTH-C-object-settings'?: {
+    model?:
+      | (
+          | 'claude-opus-4-1'
+          | 'claude-opus-4-0'
+          | 'claude-sonnet-4-0'
+          | 'claude-3-opus-latest'
+          | 'claude-3-5-haiku-latest'
+          | 'claude-3-5-sonnet-latest'
+          | 'claude-3-7-sonnet-latest'
+        )
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'GEMINI-text-settings'?: {
+    model?:
+      | (
+          | 'gemini-3-pro-preview'
+          | 'gemini-2.5-pro'
+          | 'gemini-2.5-flash'
+          | 'gemini-2.5-flash-lite'
+          | 'gemini-2.0-flash'
+          | 'gemini-2.0-flash-lite'
+          | 'gemini-flash-latest'
+        )
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'GEMINI-object-settings'?: {
+    model?:
+      | (
+          | 'gemini-3-pro-preview'
+          | 'gemini-2.5-pro'
+          | 'gemini-2.5-flash'
+          | 'gemini-2.5-flash-lite'
+          | 'gemini-2.0-flash'
+          | 'gemini-2.0-flash-lite'
+          | 'gemini-flash-latest'
+        )
+      | null;
+    maxTokens?: number | null;
+    temperature?: number | null;
+    extractAttachments?: boolean | null;
+  };
+  'imagen-settings'?: {
+    model?:
+      | (
+          | 'imagen-4.0-fast-generate-001'
+          | 'imagen-4.0-generate-001'
+          | 'imagen-4.0-ultra-generate-001'
+          | 'imagen-3.0-generate-002'
+        )
+      | null;
+    aspectRatio?: ('1:1' | '3:4' | '4:3' | '9:16' | '16:9') | null;
+    outputMimeType?: ('image/png' | 'image/jpeg') | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -996,6 +1162,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'form-submissions';
         value: number | FormSubmission;
+      } | null)
+    | ({
+        relationTo: 'plugin-ai-instructions';
+        value: number | PluginAiInstruction;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1600,6 +1770,110 @@ export interface FormSubmissionsSelect<T extends boolean = true> {
         field?: T;
         value?: T;
         id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugin-ai-instructions_select".
+ */
+export interface PluginAiInstructionsSelect<T extends boolean = true> {
+  'schema-path'?: T;
+  'field-type'?: T;
+  'relation-to'?: T;
+  'model-id'?: T;
+  disabled?: T;
+  prompt?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  system?: T;
+  layout?: T;
+  'Oai-text-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'dalle-e-settings'?:
+    | T
+    | {
+        version?: T;
+        size?: T;
+        style?: T;
+        'enable-prompt-optimization'?: T;
+      };
+  'gpt-image-1-settings'?:
+    | T
+    | {
+        version?: T;
+        size?: T;
+        quality?: T;
+        output_format?: T;
+        output_compression?: T;
+        background?: T;
+        moderation?: T;
+      };
+  'Oai-tts-settings'?:
+    | T
+    | {
+        voice?: T;
+        model?: T;
+        response_format?: T;
+        speed?: T;
+      };
+  'Oai-object-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'ANTH-C-text-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'ANTH-C-object-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'GEMINI-text-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'GEMINI-object-settings'?:
+    | T
+    | {
+        model?: T;
+        maxTokens?: T;
+        temperature?: T;
+        extractAttachments?: T;
+      };
+  'imagen-settings'?:
+    | T
+    | {
+        model?: T;
+        aspectRatio?: T;
+        outputMimeType?: T;
       };
   updatedAt?: T;
   createdAt?: T;
