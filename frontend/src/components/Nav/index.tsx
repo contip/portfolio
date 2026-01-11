@@ -12,7 +12,7 @@ const Nav = async () => {
   }
 
   return (
-    <header className="fixed top-0 z-50 w-full">
+    <header className="fixed top-0 z-50 w-full backdrop-blur-md bg-background/80 border-b border-border/50">
       <div className="mx-auto flex h-[var(--nav-height)] max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <NavClient data={navData} />
       </div>

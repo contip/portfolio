@@ -7,7 +7,7 @@ import type { Post, Media as MediaType } from "@/types/payload-types";
 import { Media } from "@/components/Media";
 import { formatDateTime } from "@/utilities/formatDateTime";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { FadeIn } from "@/components/Motion";
 
 interface BlogHeroProps {
   post: Post;
@@ -44,11 +44,11 @@ const BlogHero: React.FC<BlogHeroProps> = ({ post }) => {
         )}
       >
         {/* Top Navigation Bar */}
-        <motion.div
+        <FadeIn
           className="container mx-auto px-4 pt-6 md:pt-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          y={-20}
+          duration={0.5}
+          delay={0.1}
         >
           <div className="mx-auto max-w-5xl">
             <div className="flex items-center justify-between">
@@ -92,14 +92,14 @@ const BlogHero: React.FC<BlogHeroProps> = ({ post }) => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </FadeIn>
 
         {/* Title Section */}
-        <motion.div
+        <FadeIn
           className="container mx-auto px-4 pb-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          y={30}
+          duration={0.6}
+          delay={0.3}
         >
           <div className="mx-auto max-w-5xl">
             {hasHeroImage ? (
@@ -118,7 +118,7 @@ const BlogHero: React.FC<BlogHeroProps> = ({ post }) => {
               </div>
             )}
           </div>
-        </motion.div>
+        </FadeIn>
       </div>
 
       {/* Fallback background when no hero image */}

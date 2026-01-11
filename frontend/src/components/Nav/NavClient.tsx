@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Media } from "@/components/Media";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -10,16 +9,11 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import type {
-  Nav,
-  Page,
-  Post,
-  Media as MediaType,
-} from "@/types/payload-types";
+import type { Nav, Page, Post } from "@/types/payload-types";
 import { cn } from "@/lib/utils";
-import React from "react";
 import MobileNav from "./MobileNav";
 import ThemeToggle from "@/components/ThemeToggle";
+import { LogoFull } from "@/components/Logo";
 
 // Professional nav link styles
 const navLinkStyles = cn(
@@ -129,20 +123,13 @@ function HeroCard({
 }
 
 const NavClient = ({ data }: NavClientProps) => {
-  const { logo, brandName = "Conti Digital", navItems = [] } = data || {};
-  const logoResource =
-    logo && typeof logo === "object" ? (logo as MediaType) : undefined;
+  const { navItems = [] } = data || {};
 
   return (
     <>
-      {/* Logo + Brand */}
-      <Link href="/" className="flex items-center gap-4">
-        {logoResource && (
-          <div className="relative h-12 w-12 shrink-0">
-            <Media resource={logoResource} fill imgClassName="object-contain" />
-          </div>
-        )}
-        <span className="text-xl font-bold tracking-tight">{brandName}</span>
+      {/* Logo */}
+      <Link href="/" className="flex items-center">
+        <LogoFull className="h-14 w-auto md:h-16" />
       </Link>
 
       {/* Desktop Navigation */}

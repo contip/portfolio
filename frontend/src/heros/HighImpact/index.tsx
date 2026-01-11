@@ -6,7 +6,13 @@ import { Media } from "@/components/Media";
 import RichText from "@/components/RichText";
 import CMSLink from "@/components/CMSLink";
 import { cn } from "@/lib/utils";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "motion/react";
+import {
+  FadeIn,
+  MotionStaggerChildren,
+  MotionStaggeredChild,
+  ScrollIndicator,
+} from "@/components/Motion";
 
 type HighImpactHeroProps = Page["hero"];
 
@@ -32,7 +38,7 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
     <section
       ref={containerRef}
       className={cn(
-        "relative -mt-(--nav-height) flex min-h-screen items-center justify-center overflow-hidden pt-(--nav-height)",
+        "relative flex min-h-screen items-center justify-center overflow-hidden",
         bgColor?.startsWith("bg-") ? bgColor : ""
       )}
       style={
@@ -68,12 +74,8 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
         style={{ opacity: contentOpacity, y: contentY }}
       >
         <div className="mx-auto max-w-[44rem] text-center">
-          {/* Main Content with staggered animation */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
+          {/* Main Content */}
+          <FadeIn>
             {richText && (
               <RichText
                 className={cn(
@@ -95,39 +97,22 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
                 enableProse={false}
               />
             )}
-          </motion.div>
+          </FadeIn>
 
           {/* Links with staggered animation */}
           {Array.isArray(links) && links.length > 0 && (
-            <motion.ul
-              className="mt-12 flex flex-wrap items-center justify-center gap-4 md:gap-6"
-              initial="hidden"
+            <MotionStaggerChildren
+              as="ul"
               animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.15,
-                    delayChildren: 0.4,
-                  },
-                },
-              }}
+              staggerChildren={0.15}
+              delayChildren={0.4}
+              className="mt-12 flex flex-wrap items-center justify-center gap-4 md:gap-6"
             >
               {links.map(({ link }, i) => (
-                <motion.li
+                <MotionStaggeredChild
                   key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      transition: {
-                        duration: 0.5,
-                        ease: [0.25, 0.46, 0.45, 0.94],
-                      },
-                    },
-                  }}
+                  className="h-auto! w-auto!"
+                  duration={0.5}
                 >
                   <CMSLink
                     link={link}
@@ -135,46 +120,20 @@ const HighImpactHero: React.FC<HighImpactHeroProps> = ({
                       "shadow-xl transition-all duration-300",
                       "hover:shadow-2xl hover:-translate-y-1 hover:scale-105",
                       "text-base md:text-lg px-6 py-3 md:px-8 md:py-4",
-                      (link.appearance as string) === "link" && hasMedia && "text-white hover:text-primary"
+                      (link.appearance as string) === "link" &&
+                        hasMedia &&
+                        "text-white hover:text-primary"
                     )}
                   />
-                </motion.li>
+                </MotionStaggeredChild>
               ))}
-            </motion.ul>
+            </MotionStaggerChildren>
           )}
         </div>
       </motion.div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
-      >
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <span className="text-xs font-medium uppercase tracking-widest text-white/60">
-            Scroll
-          </span>
-          <svg
-            className="h-6 w-6 text-white/60"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
-          </svg>
-        </motion.div>
-      </motion.div>
+      {/* Scroll indicator - mobile only */}
+      <ScrollIndicator className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 md:hidden" />
 
       {/* Bottom fade for smooth transition */}
       {hasMedia && (

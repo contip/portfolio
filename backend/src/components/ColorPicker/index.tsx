@@ -122,6 +122,11 @@ export default function ColorPicker({ path, prefix = 'bg-' }: Props) {
         </button>
       )}
 
+      <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
+        Theme colors (background, primary, muted, etc.) follow light/dark mode. Palette colors stay
+        fixed.
+      </p>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {primaryColors.map((color) => (
           <Swatch key={color.title} color={color} />

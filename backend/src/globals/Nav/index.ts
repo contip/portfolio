@@ -12,25 +12,6 @@ const Nav: GlobalConfig = {
   },
   fields: [
     {
-      name: 'logo',
-      label: 'Logo',
-      type: 'upload',
-      hasMany: false,
-      relationTo: 'media',
-      admin: {
-        description: 'Square logomark or icon (recommended: simple icon without text)',
-      },
-    },
-    {
-      name: 'brandName',
-      label: 'Brand Name',
-      type: 'text',
-      defaultValue: 'Conti Digital',
-      admin: {
-        description: 'Text displayed next to the logo',
-      },
-    },
-    {
       name: 'navItems',
       label: 'Nav Items',
       type: 'array',

@@ -21,6 +21,7 @@ import {
   type ApplyColorPayload,
 } from './commands'
 import { ColorPickerDrawer } from './ColorPickerDrawer'
+import rawColors from '@/config/colors.json'
 
 // Create state configs for color and background - these store data in node.$
 const colorStateConfig = createState('color', {
@@ -30,6 +31,26 @@ const colorStateConfig = createState('color', {
 const backgroundStateConfig = createState('background', {
   parse: (value: unknown) => (typeof value === 'string' ? value : undefined),
 })
+
+type Color = { title: string; hex: string }
+type RawCategory = { name: string; colors: Color[] }
+
+const colorHexByTitle = new Map<string, string>(
+  (rawColors as RawCategory[]).flatMap((category) =>
+    category.colors.map((color) => [color.title, color.hex] as const),
+  ),
+)
+
+const resolveColorValue = (value?: string | null) => {
+  if (!value) return null
+
+  if (value.startsWith('text-') || value.startsWith('bg-')) {
+    const title = value.replace(/^text-|^bg-/, '').split('/')[0]
+    return colorHexByTitle.get(title) || null
+  }
+
+  return value
+}
 
 export const ColorPickerPlugin: PluginComponent = () => {
   const [editor] = useLexicalComposerContext()
@@ -79,13 +100,13 @@ export const ColorPickerPlugin: PluginComponent = () => {
             const background = $getState(node, backgroundStateConfig)
 
             if (color) {
-              dom.style.color = color
+              dom.style.color = resolveColorValue(color) || ''
             } else {
               dom.style.color = ''
             }
 
             if (background) {
-              dom.style.backgroundColor = background
+              dom.style.backgroundColor = resolveColorValue(background) || ''
             } else {
               dom.style.backgroundColor = ''
             }

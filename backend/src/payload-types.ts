@@ -1724,14 +1724,6 @@ export interface Footer {
  */
 export interface Nav {
   id: number;
-  /**
-   * Square logomark or icon (recommended: simple icon without text)
-   */
-  logo?: (number | null) | Media;
-  /**
-   * Text displayed next to the logo
-   */
-  brandName?: string | null;
   navItems?:
     | {
         type?: ('link' | 'dropdown') | null;
@@ -1862,8 +1854,6 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "nav_select".
  */
 export interface NavSelect<T extends boolean = true> {
-  logo?: T;
-  brandName?: T;
   navItems?:
     | T
     | {

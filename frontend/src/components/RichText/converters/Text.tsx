@@ -18,20 +18,35 @@ export const TextJSXConverter: JSXConverters<SerializedTextNode> = {
 
     if (node.$) {
       const style: React.CSSProperties = {};
+      const classNames: string[] = [];
 
       const color = node.$.color;
       const backgroundColor = node.$.background;
 
       if (color) {
-        style.color = String(color).replace("text-", "");
+        const colorValue = String(color);
+        if (colorValue.startsWith("text-")) {
+          classNames.push(colorValue);
+        } else {
+          style.color = colorValue;
+        }
       }
       if (backgroundColor) {
-        style.backgroundColor = String(backgroundColor).replace("bg-", "");
+        const backgroundValue = String(backgroundColor);
+        if (backgroundValue.startsWith("bg-")) {
+          classNames.push(backgroundValue);
+        } else {
+          style.backgroundColor = backgroundValue;
+        }
       }
 
       // Only wrap in span if we have styles to apply
-      if (Object.keys(style).length > 0) {
-        text = <span style={style}>{text}</span>;
+      if (Object.keys(style).length > 0 || classNames.length > 0) {
+        text = (
+          <span className={classNames.join(" ")} style={style}>
+            {text}
+          </span>
+        );
       }
     }
 

@@ -1,6 +1,6 @@
 [
   {
-    "name": "Base",
+    "name": "Theme",
     "colors": [
       {
         "title": "background",
@@ -8,31 +8,75 @@
       },
       {
         "title": "foreground",
-        "hex": "#1c1c1c"
+        "hex": "#0f172a"
+      },
+      {
+        "title": "card",
+        "hex": "#ffffff"
+      },
+      {
+        "title": "card-foreground",
+        "hex": "#0f172a"
+      },
+      {
+        "title": "popover",
+        "hex": "#ffffff"
+      },
+      {
+        "title": "popover-foreground",
+        "hex": "#0f172a"
       },
       {
         "title": "primary",
-        "hex": "#0d0d0d"
+        "hex": "#0f172a"
       },
       {
         "title": "primary-foreground",
-        "hex": "#d6e6ff"
+        "hex": "#f8fafc"
       },
       {
         "title": "secondary",
-        "hex": "#f0f7ff"
+        "hex": "#f1f5f9"
+      },
+      {
+        "title": "secondary-foreground",
+        "hex": "#0f172a"
+      },
+      {
+        "title": "muted",
+        "hex": "#f1f5f9"
       },
       {
         "title": "muted-foreground",
-        "hex": "#6e7a7a"
+        "hex": "#64748b"
+      },
+      {
+        "title": "accent",
+        "hex": "#e2e8f0"
+      },
+      {
+        "title": "accent-foreground",
+        "hex": "#0f172a"
       },
       {
         "title": "destructive",
-        "hex": "#ff4d4d"
+        "hex": "#ef4444"
+      },
+      {
+        "title": "destructive-foreground",
+        "hex": "#fef2f2"
       },
       {
         "title": "border",
-        "hex": "#e6f0ff"
+        "hex": "#e2e8f0"
+      },
+      {
+        "title": "input",
+        "hex": "#e2e8f0"
+      },
+      {
+        "title": "ring",
+        "hex": "#0f172a"
       }
     ]
   },

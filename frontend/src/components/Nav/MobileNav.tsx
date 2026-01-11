@@ -12,10 +12,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Media } from "@/components/Media";
-import type { Nav, Page, Post, Media as MediaType } from "@/types/payload-types";
+import type { Nav, Page, Post } from "@/types/payload-types";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
+import { LogoIcon } from "@/components/Logo";
 
 interface MobileNavProps {
   data: Nav | null;
@@ -41,9 +41,7 @@ const MobileNav = ({ data }: MobileNavProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<NavItem | null>(null);
 
-  const { logo, brandName = "Conti Digital", navItems = [] } = data || {};
-  const logoResource =
-    logo && typeof logo === "object" ? (logo as MediaType) : undefined;
+  const { navItems = [] } = data || {};
 
   const handleClose = () => {
     setIsOpen(false);
@@ -65,16 +63,8 @@ const MobileNav = ({ data }: MobileNavProps) => {
       <SheetContent side="left" className="flex w-80 flex-col p-0">
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle className="flex items-center gap-3">
-            {logoResource && (
-              <div className="relative h-8 w-8">
-                <Media
-                  resource={logoResource}
-                  fill
-                  imgClassName="object-contain"
-                />
-              </div>
-            )}
-            <span className="text-lg font-semibold">{brandName}</span>
+            <LogoIcon className="h-8 w-8" />
+            <span className="text-lg font-semibold">Peter T Conti</span>
           </SheetTitle>
         </SheetHeader>
 

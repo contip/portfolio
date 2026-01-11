@@ -4,6 +4,11 @@ import { Media } from "@/components/Media";
 import RichText from "@/components/RichText";
 import CMSLink from "@/components/CMSLink";
 import { cn } from "@/lib/utils";
+import {
+  FadeIn,
+  MotionStaggerChildren,
+  MotionStaggeredChild,
+} from "@/components/Motion";
 
 type MediumImpactHeroProps = Page["hero"];
 
@@ -18,7 +23,7 @@ const MediumImpactHero: React.FC<MediumImpactHeroProps> = ({
   return (
     <section
       className={cn(
-        "relative -mt-(--nav-height) flex min-h-[70vh] items-center justify-center overflow-hidden pt-(--nav-height)",
+        "relative flex min-h-[70vh] items-center justify-center overflow-hidden",
         bgColor?.startsWith("bg-") ? bgColor : ""
       )}
       style={
@@ -45,40 +50,54 @@ const MediumImpactHero: React.FC<MediumImpactHeroProps> = ({
       {/* Content */}
       <div className="container relative z-10 py-20 md:py-28">
         <div className="mx-auto max-w-[42rem] text-center">
-          {richText && (
-            <RichText
-              className={cn(
-                "mb-8",
-                "[&>h1]:text-4xl [&>h1]:font-bold [&>h1]:leading-tight [&>h1]:tracking-tight",
-                "md:[&>h1]:text-5xl lg:[&>h1]:text-6xl",
-                "[&>h1]:mb-6",
-                "[&>p]:text-lg [&>p]:leading-relaxed [&>p]:font-light",
-                "md:[&>p]:text-xl",
-                hasMedia
-                  ? "[&>h1]:text-white [&>p]:text-gray-200 [&>*]:drop-shadow-lg"
-                  : "[&>h1]:text-foreground [&>p]:text-muted-foreground",
-                "[&_strong]:text-primary [&_strong]:font-semibold"
-              )}
-              data={richText}
-              enableGutter={false}
-              enableProse={false}
-            />
-          )}
+          <FadeIn duration={0.7}>
+            {richText && (
+              <RichText
+                className={cn(
+                  "mb-8",
+                  "[&>h1]:text-4xl [&>h1]:font-bold [&>h1]:leading-tight [&>h1]:tracking-tight",
+                  "md:[&>h1]:text-5xl lg:[&>h1]:text-6xl",
+                  "[&>h1]:mb-6",
+                  "[&>p]:text-lg [&>p]:leading-relaxed [&>p]:font-light",
+                  "md:[&>p]:text-xl",
+                  hasMedia
+                    ? "[&>h1]:text-white [&>p]:text-gray-200 [&>*]:drop-shadow-lg"
+                    : "[&>h1]:text-foreground [&>p]:text-muted-foreground",
+                  "[&_strong]:text-primary [&_strong]:font-semibold"
+                )}
+                data={richText}
+                enableGutter={false}
+                enableProse={false}
+              />
+            )}
+          </FadeIn>
 
           {Array.isArray(links) && links.length > 0 && (
-            <ul className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <MotionStaggerChildren
+              as="ul"
+              animate="visible"
+              staggerChildren={0.12}
+              delayChildren={0.3}
+              className="mt-10 flex flex-wrap items-center justify-center gap-4"
+            >
               {links.map(({ link }, i) => (
-                <li key={i}>
+                <MotionStaggeredChild
+                  key={i}
+                  className="h-auto! w-auto!"
+                  duration={0.4}
+                >
                   <CMSLink
                     link={link}
                     className={cn(
                       "shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5",
-                      (link.appearance as string) === "link" && hasMedia && "text-white hover:text-primary"
+                      (link.appearance as string) === "link" &&
+                        hasMedia &&
+                        "text-white hover:text-primary"
                     )}
                   />
-                </li>
+                </MotionStaggeredChild>
               ))}
-            </ul>
+            </MotionStaggerChildren>
           )}
         </div>
       </div>

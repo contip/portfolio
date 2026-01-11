@@ -40,7 +40,7 @@ export const ColorPickerDrawer = ({
 }: ColorPickerDrawerProps) => {
   const { openModal, closeModal, isModalOpen } = useModal()
   const [showMore, setShowMore] = useState(false)
-  const [selectedHex, setSelectedHex] = useState<string | null>(null)
+  const [selectedValue, setSelectedValue] = useState<string | null>(null)
 
   // Sync isOpen prop with modal state
   useEffect(() => {
@@ -58,17 +58,23 @@ export const ColorPickerDrawer = ({
   )
 
   const primaryColors = categories[0]?.colors ?? []
+  const primaryTitle = categories[0]?.title ?? 'Colors'
   const extraCategories = categories.slice(1)
 
-  const selectedColor = flatColors.find((c) => c.hex === selectedHex)
+  const prefix = colorType === 'text' ? 'text-' : 'bg-'
+  const selectedTitle = selectedValue?.replace(/^text-|^bg-/, '')
+  const selectedColor =
+    (selectedTitle && flatColors.find((c) => c.title === selectedTitle)) ||
+    (selectedValue && flatColors.find((c) => c.hex === selectedValue))
 
   const handleColorClick = (color: Color) => {
-    setSelectedHex(color.hex)
-    onColorSelect(color.hex)
+    const value = `${prefix}${color.title}`
+    setSelectedValue(value)
+    onColorSelect(value)
   }
 
   const handleClear = () => {
-    setSelectedHex(null)
+    setSelectedValue(null)
     onColorSelect(null)
   }
 
@@ -78,7 +84,7 @@ export const ColorPickerDrawer = ({
   }
 
   const Swatch = ({ color }: { color: Color }) => {
-    const isSelected = selectedHex === color.hex
+    const isSelected = selectedTitle === color.title
 
     return (
       <button
@@ -110,16 +116,20 @@ export const ColorPickerDrawer = ({
               height: 40,
               borderRadius: 9999,
               border: '2px solid #e5e7eb',
-              background: selectedHex || '#ffffff',
+              background: selectedColor?.hex || '#ffffff',
             }}
           />
           <div>
             <div style={{ fontSize: 12, opacity: 0.7 }}>Selected</div>
             <div style={{ fontSize: 14 }}>
-              {selectedColor?.title || (selectedHex ? 'Custom' : 'None')}
+              {selectedColor?.title || (selectedValue ? 'Custom' : 'None')}
             </div>
           </div>
         </div>
+
+        <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
+          Theme colors swap with light/dark mode. Palette colors stay fixed.
+        </p>
 
         <button
           type="button"
@@ -139,7 +149,7 @@ export const ColorPickerDrawer = ({
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
-            Base Colors
+            {primaryTitle}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {primaryColors.map((color) => (
