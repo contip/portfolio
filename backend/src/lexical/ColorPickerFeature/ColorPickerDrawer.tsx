@@ -63,9 +63,10 @@ export const ColorPickerDrawer = ({
 
   const prefix = colorType === 'text' ? 'text-' : 'bg-'
   const selectedTitle = selectedValue?.replace(/^text-|^bg-/, '')
-  const selectedColor =
-    (selectedTitle && flatColors.find((c) => c.title === selectedTitle)) ||
-    (selectedValue && flatColors.find((c) => c.hex === selectedValue))
+  const selectedColor: Color | null =
+    (selectedTitle ? flatColors.find((c) => c.title === selectedTitle) : null) ||
+    (selectedValue ? flatColors.find((c) => c.hex === selectedValue) : null) ||
+    null
 
   const handleColorClick = (color: Color) => {
     const value = `${prefix}${color.title}`
