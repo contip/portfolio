@@ -11,17 +11,29 @@ import { RenderHero } from "@/heros";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 
 export async function generateStaticParams() {
-  const pages = await getCachedCollection<Page>("pages", {
-    depth: 0,
-    select: { slug: true },
-    pagination: false,
-    draft: false,
-    limit: 10000,
-  });
-  const params = pages.docs
-    ?.filter((doc) => doc.slug !== "home")
-    .map(({ slug }) => ({ slug }));
-  return params;
+  try {
+    const pages = await getCachedCollection<Page>("pages", {
+      depth: 0,
+      select: { slug: true },
+      pagination: false,
+      draft: false,
+      limit: 10000,
+    });
+    const params = pages.docs
+      ?.filter((doc) => doc.slug !== "home")
+      .map(({ slug }) => ({ slug }));
+
+    // Next.js 16+ requires at least one result when using Cache Components
+    // Return "home" if no pages exist yet (e.g., during initial CI/CD build)
+    if (!params || params.length === 0) {
+      return [{ slug: "home" }];
+    }
+
+    return params;
+  } catch {
+    // If API is unavailable during build, return home fallback
+    return [{ slug: "home" }];
+  }
 }
 
 type Args = {
