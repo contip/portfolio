@@ -101,9 +101,31 @@ export async function getCachedCollection<T>(
     { addQueryPrefix: true, skipNulls: true }
   );
 
-  return fetchPayload<PayloadListResponse<T>>(`/${collection}${queryString}`, {
-    cache: "no-store",
-  });
+  try {
+    return await fetchPayload<PayloadListResponse<T>>(
+      `/${collection}${queryString}`,
+      {
+        cache: "no-store",
+      }
+    );
+  } catch (error) {
+    // During build, API may be unavailable - return empty result
+    if (error instanceof PayloadApiError) {
+      return {
+        docs: [],
+        totalDocs: 0,
+        limit: 0,
+        totalPages: 0,
+        page: 1,
+        pagingCounter: 1,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      };
+    }
+    throw error;
+  }
 }
 
 export async function getCachedDocument<T>(
@@ -123,12 +145,20 @@ export async function getCachedDocument<T>(
     { addQueryPrefix: true, skipNulls: true }
   );
 
-  const response = await fetchPayload<PayloadListResponse<T>>(
-    `/${collection}${queryString}`,
-    { cache: "no-store" }
-  );
+  try {
+    const response = await fetchPayload<PayloadListResponse<T>>(
+      `/${collection}${queryString}`,
+      { cache: "no-store" }
+    );
 
-  return response.docs[0] || null;
+    return response.docs[0] || null;
+  } catch (error) {
+    // During build or if document doesn't exist, return null
+    if (error instanceof PayloadApiError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getCachedDocumentByID<T>(
@@ -160,7 +190,7 @@ export async function getCachedDocumentByID<T>(
 export async function getCachedGlobal<T>(
   slug: string,
   options: CachedQueryOptions = {}
-): Promise<T> {
+): Promise<T | null> {
   "use cache";
   cacheTag(`global_${slug}`);
 
@@ -169,9 +199,17 @@ export async function getCachedGlobal<T>(
     skipNulls: true,
   });
 
-  return fetchPayload<T>(`/globals/${slug}${queryString}`, {
-    cache: "no-store",
-  });
+  try {
+    return await fetchPayload<T>(`/globals/${slug}${queryString}`, {
+      cache: "no-store",
+    });
+  } catch (error) {
+    // During build, API may be unavailable - return null
+    if (error instanceof PayloadApiError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getPayloadHealth(): Promise<boolean> {
