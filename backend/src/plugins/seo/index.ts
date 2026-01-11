@@ -1,11 +1,10 @@
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import type { Document, Plugin } from 'payload'
 
-const siteName =
-  process.env.PAYLOAD_PUBLIC_SITE_NAME || process.env.SITE_NAME || 'Site'
+const siteName = process.env.PAYLOAD_PUBLIC_SITE_NAME || process.env.SITE_NAME || 'Site'
 
 export const SEOPlugin: Plugin = seoPlugin({
-  collections: ['pages', 'posts', 'services', 'categories'],
+  collections: ['pages', 'posts', 'services', 'categories', 'lizards'],
   uploadsCollection: 'media',
   generateTitle: ({ doc }: { doc: Document }) => `${siteName} - ${doc.title}`,
   generateDescription: ({ doc }: { doc: Document }) => `${doc.description ?? ''}`,

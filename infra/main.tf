@@ -287,13 +287,14 @@ module "opennext_frontend" {
   # Note: NEXT_PUBLIC_* vars are baked in at build time, not runtime.
   server_function = {
     additional_environment_variables = {
-      PAYLOAD_API_URL             = "https://api.${var.domain_name}"
-      NEXT_PUBLIC_PAYLOAD_API_URL = "https://api.${var.domain_name}"
-      NEXT_PUBLIC_SERVER_URL      = "https://api.${var.domain_name}"
-      FRONTEND_URL                = "https://${var.domain_name}"
-      REVALIDATE_SECRET           = module.secrets.revalidate_secret
-      PREVIEW_SECRET              = module.secrets.preview_secret
-      APP_STAGE                   = var.app_stage
+      PAYLOAD_API_URL              = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_PAYLOAD_API_URL  = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_SERVER_URL       = "https://api.${var.domain_name}"
+      FRONTEND_URL                 = "https://${var.domain_name}"
+      NEXT_PUBLIC_FRONTEND_URL     = "https://${var.domain_name}"
+      REVALIDATE_SECRET            = module.secrets.revalidate_secret
+      PREVIEW_SECRET               = module.secrets.preview_secret
+      APP_STAGE                    = var.app_stage
     }
     additional_iam_policies = [
       {

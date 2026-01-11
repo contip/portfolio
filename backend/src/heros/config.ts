@@ -2,6 +2,7 @@ import type { Field } from 'payload'
 
 import { link } from '@/fields/link'
 import richText from '@/fields/richText'
+import colorField from '@/fields/Color/config'
 
 export const hero: Field = {
   name: 'hero',
@@ -38,7 +39,11 @@ export const hero: Field = {
       type: 'array',
       label: 'Links',
       maxRows: 2,
-      fields: [link()],
+      fields: [
+        link({
+          appearances: ['default', 'outline', 'secondary', 'ghost', 'link'],
+        }),
+      ],
     },
     {
       name: 'media',
@@ -48,8 +53,9 @@ export const hero: Field = {
       },
       relationTo: 'media',
       hasMany: false,
-      required: true,
+      required: false,
     },
+    colorField({ name: 'bgColor', label: 'Background Color' }),
   ],
   label: false,
 }

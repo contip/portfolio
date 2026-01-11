@@ -86,6 +86,7 @@ jobs:
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_PAYLOAD_API_URL: https://api.${{ secrets.DOMAIN_NAME }}
+          NEXT_PUBLIC_FRONTEND_URL: https://${{ secrets.DOMAIN_NAME }}
         run: |
           set -euo pipefail
 

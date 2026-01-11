@@ -19,6 +19,7 @@ type ColorCategory = {
 interface Props {
   path: string
   label?: string
+  prefix?: string
 }
 
 const formatCategories = (categories: RawCategory[]): ColorCategory[] =>
@@ -27,21 +28,45 @@ const formatCategories = (categories: RawCategory[]): ColorCategory[] =>
     colors: category.colors,
   }))
 
-export default function ColorPicker({ path }: Props) {
+/**
+ * Converts a color title to a Tailwind class with the given prefix.
+ * e.g., ("slate-500", "bg-") -> "bg-slate-500"
+ * e.g., ("slate-500", "text-") -> "text-slate-500"
+ */
+const toTailwindClass = (title: string, prefix: string): string => `${prefix}${title}`
+
+/**
+ * Extracts the color name from a Tailwind class by removing the prefix.
+ * e.g., ("bg-slate-500", "bg-") -> "slate-500"
+ * e.g., ("text-slate-500", "text-") -> "slate-500"
+ */
+const fromTailwindClass = (className: string, prefix: string): string => {
+  if (className.startsWith(prefix)) {
+    return className.slice(prefix.length)
+  }
+  return className
+}
+
+export default function ColorPicker({ path, prefix = 'bg-' }: Props) {
   const { value, setValue } = useField<string>({ path })
   const [showMore, setShowMore] = useState(false)
 
   const categories = useMemo(() => formatCategories(rawColors as RawCategory[]), [])
-  const flatColors = useMemo(() => categories.flatMap((category) => category.colors), [categories])
+  const flatColors = useMemo(
+    () => categories.flatMap((category) => category.colors),
+    [categories],
+  )
 
-  const normalizedValue = typeof value === 'string' ? value.replace(/^[^-]+-/, '') : ''
-  const selected = flatColors.find((color) => color.hex === value || color.title === normalizedValue)
+  // Extract color name from stored Tailwind class (e.g., "bg-slate-500" -> "slate-500")
+  const colorName = typeof value === 'string' ? fromTailwindClass(value, prefix) : ''
+  const selected = flatColors.find((color) => color.title === colorName)
 
   const primaryColors = categories[0]?.colors ?? []
   const extraCategories = categories.slice(1)
 
   const choose = (color: Color) => {
-    setValue(color.hex)
+    // Store as Tailwind class name (e.g., "bg-slate-500" or "text-slate-500")
+    setValue(toTailwindClass(color.title, prefix))
   }
 
   const Swatch = ({ color }: { color: Color }) => {
@@ -74,7 +99,9 @@ export default function ColorPicker({ path }: Props) {
         <Swatch color={selected || { title: 'None', hex: '#ffffff' }} />
         <div>
           <div style={{ fontSize: 12, opacity: 0.7 }}>Selected</div>
-          <div style={{ fontSize: 14 }}>{selected?.title || 'None'}</div>
+          <div style={{ fontSize: 14 }}>
+            {value ? `${value} (${selected?.title || 'custom'})` : 'None'}
+          </div>
         </div>
       </div>
 

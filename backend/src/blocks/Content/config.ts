@@ -7,6 +7,8 @@ import FormBlock from '../Form/config'
 import { MediaBlock } from '../MediaBlock/config'
 import MediaGrid from '../MediaGrid/config'
 import BlogHighlight from '../BlogHighlight/config'
+import { BlogArchive } from '../BlogArchive/config'
+import { Code } from '../Code/config'
 
 const columnFields: Field[] = [
   {
@@ -32,8 +34,22 @@ const columnFields: Field[] = [
       },
     ],
   },
-  richText({}, { blocks: [CallToAction, Features, FormBlock, MediaBlock, MediaGrid, BlogHighlight] }),
-  colorField({ name: 'backgroundColor', label: 'Background Color' }),
+  richText(
+    {},
+    {
+      blocks: [
+        CallToAction,
+        Features,
+        FormBlock,
+        MediaBlock,
+        MediaGrid,
+        BlogHighlight,
+        BlogArchive,
+        Code,
+      ],
+    },
+  ),
+  colorField({ name: 'backgroundColor', label: 'Background Color', prefix: 'bg-' }),
 ]
 
 const Content: Block = {

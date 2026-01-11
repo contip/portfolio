@@ -1,17 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { JetBrains_Mono, Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import Nav from "@/components/Nav";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,28 +34,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <nav className="border-b">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <Link href="/" className="font-semibold text-lg">
-                Portfolio
-              </Link>
-              <div className="flex gap-2">
-                <Button variant="ghost" asChild>
-                  <Link href="/">Home</Link>
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link href="/lizards">Lizards</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </nav>
-        <main>{children}</main>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${manrope.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}
+    >
+      <body className="antialiased">
+        <ThemeProvider>
+          <Nav />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

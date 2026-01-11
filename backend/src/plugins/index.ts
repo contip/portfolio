@@ -4,6 +4,7 @@ import { S3StoragePlugin } from './s3'
 import { PayloadAiPlugin } from './ai'
 import { SEOPlugin } from './seo'
 import { NestedDocsPlugin } from './nested-docs'
+import { RedirectsPlugin } from './redirects'
 
 /**
  * Payload CMS Plugins
@@ -15,10 +16,10 @@ import { NestedDocsPlugin } from './nested-docs'
 
 const hasS3Config = Boolean(
   process.env.S3_BUCKET &&
-    process.env.S3_ACCESS_KEY_ID &&
-    process.env.S3_SECRET_ACCESS_KEY &&
-    process.env.S3_REGION &&
-    process.env.CLOUDFRONT_DOMAIN,
+  process.env.S3_ACCESS_KEY_ID &&
+  process.env.S3_SECRET_ACCESS_KEY &&
+  process.env.S3_REGION &&
+  process.env.CLOUDFRONT_DOMAIN,
 )
 
 export const plugins: Plugin[] = [
@@ -27,4 +28,5 @@ export const plugins: Plugin[] = [
   NestedDocsPlugin,
   ...(hasS3Config ? [S3StoragePlugin] : []),
   PayloadAiPlugin,
+  RedirectsPlugin,
 ]

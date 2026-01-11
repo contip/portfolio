@@ -77,6 +77,7 @@ export interface Config {
     lizards: Lizard;
     forms: Form;
     'form-submissions': FormSubmission;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     lizards: LizardsSelect<false> | LizardsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -281,12 +283,13 @@ export interface Page {
             /**
              * Choose how the link should be rendered.
              */
-            appearance?: ('default' | 'outline') | null;
+            appearance?: ('default' | 'outline' | 'secondary' | 'ghost' | 'link') | null;
           };
           id?: string | null;
         }[]
       | null;
     media?: (number | null) | Media;
+    bgColor?: string | null;
   };
   layout: (ContentBlock | CallToActionBlock | FeaturesBlock | FormBlock | BlogArchiveBlock | BlogHighlightBlock)[];
   meta?: {
@@ -825,12 +828,13 @@ export interface Service {
             /**
              * Choose how the link should be rendered.
              */
-            appearance?: ('default' | 'outline') | null;
+            appearance?: ('default' | 'outline' | 'secondary' | 'ghost' | 'link') | null;
           };
           id?: string | null;
         }[]
       | null;
     media?: (number | null) | Media;
+    bgColor?: string | null;
   };
   layout: (ContentBlock | CallToActionBlock | FeaturesBlock | FormBlock)[];
   meta?: {
@@ -864,6 +868,14 @@ export interface Lizard {
   slug: string;
   image?: (number | null) | Media;
   additionalImages?: (number | Media)[] | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -882,6 +894,42 @@ export interface FormSubmission {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  from: string;
+  to?: {
+    type?: ('reference' | 'custom') | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null)
+      | ({
+          relationTo: 'categories';
+          value: number | Category;
+        } | null)
+      | ({
+          relationTo: 'lizards';
+          value: number | Lizard;
+        } | null)
+      | ({
+          relationTo: 'services';
+          value: number | Service;
+        } | null);
+    url?: string | null;
+  };
+  type: '307' | '308';
   updatedAt: string;
   createdAt: string;
 }
@@ -948,6 +996,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'form-submissions';
         value: number | FormSubmission;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1107,6 +1159,7 @@ export interface PagesSelect<T extends boolean = true> {
               id?: T;
             };
         media?: T;
+        bgColor?: T;
       };
   layout?:
     | T
@@ -1301,6 +1354,7 @@ export interface ServicesSelect<T extends boolean = true> {
               id?: T;
             };
         media?: T;
+        bgColor?: T;
       };
   layout?:
     | T
@@ -1377,6 +1431,13 @@ export interface LizardsSelect<T extends boolean = true> {
   slug?: T;
   image?: T;
   additionalImages?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1545,6 +1606,23 @@ export interface FormSubmissionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?:
+    | T
+    | {
+        type?: T;
+        reference?: T;
+        url?: T;
+      };
+  type?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1646,8 +1724,14 @@ export interface Footer {
  */
 export interface Nav {
   id: number;
-  logoLight?: (number | null) | Media;
-  logoDark?: (number | null) | Media;
+  /**
+   * Square logomark or icon (recommended: simple icon without text)
+   */
+  logo?: (number | null) | Media;
+  /**
+   * Text displayed next to the logo
+   */
+  brandName?: string | null;
   navItems?:
     | {
         type?: ('link' | 'dropdown') | null;
@@ -1672,6 +1756,33 @@ export interface Nav {
         };
         ddSettings?: {
           title: string;
+          /**
+           * Add a featured section on the left side of the dropdown
+           */
+          enableHero?: boolean | null;
+          hero?: {
+            title: string;
+            description?: string | null;
+            heroLink: {
+              type?: ('reference' | 'custom') | null;
+              newTab?: boolean | null;
+              reference?:
+                | ({
+                    relationTo: 'pages';
+                    value: number | Page;
+                  } | null)
+                | ({
+                    relationTo: 'posts';
+                    value: number | Post;
+                  } | null);
+              url?: string | null;
+              label: string;
+              /**
+               * Choose how the link should be rendered.
+               */
+              appearance?: ('default' | 'outline') | null;
+            };
+          };
           ddLinks?:
             | {
                 link: {
@@ -1693,6 +1804,10 @@ export interface Nav {
                    */
                   appearance?: ('default' | 'outline') | null;
                 };
+                /**
+                 * Short description shown below the link in the dropdown menu
+                 */
+                description?: string | null;
                 id?: string | null;
               }[]
             | null;
@@ -1747,8 +1862,8 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "nav_select".
  */
 export interface NavSelect<T extends boolean = true> {
-  logoLight?: T;
-  logoDark?: T;
+  logo?: T;
+  brandName?: T;
   navItems?:
     | T
     | {
@@ -1767,6 +1882,23 @@ export interface NavSelect<T extends boolean = true> {
           | T
           | {
               title?: T;
+              enableHero?: T;
+              hero?:
+                | T
+                | {
+                    title?: T;
+                    description?: T;
+                    heroLink?:
+                      | T
+                      | {
+                          type?: T;
+                          newTab?: T;
+                          reference?: T;
+                          url?: T;
+                          label?: T;
+                          appearance?: T;
+                        };
+                  };
               ddLinks?:
                 | T
                 | {
@@ -1780,6 +1912,7 @@ export interface NavSelect<T extends boolean = true> {
                           label?: T;
                           appearance?: T;
                         };
+                    description?: T;
                     id?: T;
                   };
             };
@@ -1810,6 +1943,17 @@ export interface MediaGridBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'mediaGrid';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CodeBlock".
+ */
+export interface CodeBlock {
+  language?: ('typescript' | 'javascript' | 'css' | 'c' | 'python') | null;
+  code: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'code';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

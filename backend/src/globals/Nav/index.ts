@@ -12,18 +12,23 @@ const Nav: GlobalConfig = {
   },
   fields: [
     {
-      name: 'logoLight',
-      label: 'Logo Light',
+      name: 'logo',
+      label: 'Logo',
       type: 'upload',
       hasMany: false,
       relationTo: 'media',
+      admin: {
+        description: 'Square logomark or icon (recommended: simple icon without text)',
+      },
     },
     {
-      name: 'logoDark',
-      label: 'Logo Dark',
-      type: 'upload',
-      hasMany: false,
-      relationTo: 'media',
+      name: 'brandName',
+      label: 'Brand Name',
+      type: 'text',
+      defaultValue: 'Conti Digital',
+      admin: {
+        description: 'Text displayed next to the logo',
+      },
     },
     {
       name: 'navItems',
@@ -67,6 +72,45 @@ const Nav: GlobalConfig = {
               required: true,
             },
             {
+              name: 'enableHero',
+              label: 'Enable Hero Section',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                description: 'Add a featured section on the left side of the dropdown',
+              },
+            },
+            {
+              name: 'hero',
+              label: 'Hero Section',
+              type: 'group',
+              admin: {
+                condition: (_data, siblingData) => siblingData?.enableHero === true,
+              },
+              fields: [
+                {
+                  name: 'title',
+                  label: 'Title',
+                  type: 'text',
+                  required: true,
+                },
+                {
+                  name: 'description',
+                  label: 'Description',
+                  type: 'textarea',
+                },
+                link({
+                  overrides: {
+                    name: 'heroLink',
+                    label: 'Hero Link',
+                    admin: {
+                      hideGutter: true,
+                    },
+                  },
+                }),
+              ],
+            },
+            {
               name: 'ddLinks',
               label: 'Dropdown Links',
               type: 'array',
@@ -78,6 +122,14 @@ const Nav: GlobalConfig = {
                     },
                   },
                 }),
+                {
+                  name: 'description',
+                  label: 'Description',
+                  type: 'text',
+                  admin: {
+                    description: 'Short description shown below the link in the dropdown menu',
+                  },
+                },
               ],
               maxRows: 6,
             },

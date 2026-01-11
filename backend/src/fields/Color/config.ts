@@ -1,23 +1,47 @@
 import type { Field } from 'payload'
 import deepMerge from '@/utilities/deepMerge'
-import addPrefix from './hooks/add-prefix'
 
-const defaultColorField = (prefix: string): Field => ({
-  admin: {
-    components: {
-      Field: '@/components/ColorPicker',
+type ColorFieldOptions = Partial<Field> & {
+  prefix?: string
+}
+
+/**
+ * Creates a color field that stores Tailwind class names.
+ *
+ * @param options - Field overrides and optional prefix
+ * @param options.prefix - Tailwind prefix like 'bg-', 'text-', 'border-' (default: 'bg-')
+ *
+ * @example
+ * // Background color field
+ * colorField({ name: 'backgroundColor', prefix: 'bg-' })
+ *
+ * @example
+ * // Text color field
+ * colorField({ name: 'textColor', prefix: 'text-' })
+ *
+ * @example
+ * // Border color field
+ * colorField({ name: 'borderColor', prefix: 'border-' })
+ */
+const colorField = (options: ColorFieldOptions = {}): Field => {
+  const { prefix = 'bg-', ...overrides } = options
+
+  const baseField: Field = {
+    admin: {
+      components: {
+        Field: {
+          path: '@/components/ColorPicker',
+          clientProps: {
+            prefix,
+          },
+        },
+      },
     },
-  },
-  name: 'color',
-  type: 'text',
-  hooks: {
-    beforeValidate: [addPrefix(prefix)],
-  },
-})
+    name: 'color',
+    type: 'text',
+  }
 
-const colorField = (overrides?: Partial<Field>, prefix = ''): Field => {
-  const baseField = defaultColorField(prefix)
-  return deepMerge(baseField, overrides ?? {})
+  return deepMerge(baseField, overrides)
 }
 
 export default colorField

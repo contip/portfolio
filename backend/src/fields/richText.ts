@@ -6,6 +6,7 @@ import {
   BlockquoteFeature,
   OrderedListFeature,
   UnorderedListFeature,
+  HeadingFeature,
   IndentFeature,
   InlineCodeFeature,
   ItalicFeature,
@@ -20,8 +21,8 @@ import {
   LinkFields,
   UploadFeature,
   TextStateFeature,
-  defaultColors,
 } from '@payloadcms/richtext-lexical'
+import { ColorPickerFeature } from '@/lexical/ColorPickerFeature'
 import type {
   Block,
   RichTextField,
@@ -49,6 +50,7 @@ const richText: RichText = (
       const features = [
         BoldFeature(),
         ItalicFeature(),
+        HeadingFeature(),
         UnderlineFeature(),
         StrikethroughFeature(),
         SubscriptFeature(),
@@ -58,44 +60,9 @@ const richText: RichText = (
         OrderedListFeature(),
         UnorderedListFeature(),
         IndentFeature(),
+        ColorPickerFeature(),
         TextStateFeature({
           state: {
-            color: {
-              ...defaultColors.text,
-              white: {
-                label: 'White',
-                css: { color: 'white' },
-              },
-              galaxy: {
-                label: 'Galaxy',
-                css: { background: 'linear-gradient(to right, #0000ff, #ff0000)', color: 'white' },
-              },
-              sunset: {
-                label: 'Sunset',
-                css: { background: 'linear-gradient(to top, #ff5f6d, #6a3093)' },
-              },
-            },
-            background: {
-              ...defaultColors.background,
-              black: {
-                label: 'Black',
-                css: { background: 'black' },
-              },
-            },
-            size: {
-              large: {
-                label: 'Large Text',
-                css: {
-                  'font-size': 'large',
-                },
-              },
-              larger: {
-                label: 'Larger Text',
-                css: {
-                  'font-size': 'larger',
-                },
-              },
-            },
             underline: {
               solid: {
                 label: 'Solid',

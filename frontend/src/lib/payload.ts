@@ -162,7 +162,7 @@ export async function getCachedGlobal<T>(
   options: CachedQueryOptions = {}
 ): Promise<T> {
   "use cache";
-  cacheTag(slug);
+  cacheTag(`global_${slug}`);
 
   const queryString = stringify(options, {
     addQueryPrefix: true,
