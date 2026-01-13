@@ -2,6 +2,7 @@ import { MediaBlock } from "@/blocks/Media";
 import {
   DefaultNodeTypes,
   SerializedBlockNode,
+  SerializedInlineBlockNode,
   SerializedLinkNode,
   type DefaultTypedEditorState,
 } from "@payloadcms/richtext-lexical";
@@ -19,9 +20,19 @@ import {
   BlogHighlightBlock as BlogHighlightBlockProps,
   FeaturesBlock as FeaturesBlockProps,
   FormBlock as FormBlockProps,
+  Icon as IconProps,
 } from "@/types/payload-types";
 import { cn } from "@/lib/utils";
 import { TextJSXConverter } from "./converters/Text";
+import InlineIcon from "./InlineIcon";
+
+type InlineIconFields = {
+  blockType: "inlineIcon";
+  blockName?: string | null;
+  icon: number | string | IconProps;
+  textColor?: string | null;
+  backgroundColor?: string | null;
+};
 
 type NodeTypes =
   | DefaultNodeTypes
@@ -34,7 +45,8 @@ type NodeTypes =
       | MediaGridBlockProps
       | BlogHighlightBlockProps
       | BlogArchiveBlockProps
-    >;
+    >
+  | SerializedInlineBlockNode<InlineIconFields>;
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   const { value, relationTo } = linkNode.fields.doc!;
@@ -62,6 +74,33 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({
         disableInnerContainer={true}
       />
     ),
+  },
+  inlineBlocks: {
+    inlineIcon: ({ node }) => {
+      const iconValue = node.fields.icon;
+      const resolvedIcon =
+        iconValue && typeof iconValue === "object" && "value" in iconValue
+          ? (iconValue as { value?: unknown }).value
+          : iconValue;
+
+      if (!resolvedIcon || typeof resolvedIcon !== "object") {
+        return null;
+      }
+
+      const { svg, title } = resolvedIcon as Pick<IconProps, "svg" | "title">;
+      if (!svg) {
+        return null;
+      }
+
+      return (
+        <InlineIcon
+          svg={svg}
+          title={title}
+          textColor={node.fields.textColor}
+          backgroundColor={node.fields.backgroundColor}
+        />
+      );
+    },
   },
 });
 

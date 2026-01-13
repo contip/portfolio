@@ -377,9 +377,9 @@ export interface ContentBlock {
  * via the `definition` "FeaturesBlock".
  */
 export interface FeaturesBlock {
-  background?: ('light' | 'dark') | null;
+  backgroundColor?: string | null;
   tagline?: string | null;
-  richText?: {
+  richText: {
     root: {
       type: string;
       children: {
@@ -393,7 +393,7 @@ export interface FeaturesBlock {
       version: number;
     };
     [k: string]: unknown;
-  } | null;
+  };
   features?:
     | {
         name: string;
@@ -1397,7 +1397,7 @@ export interface CallToActionBlockSelect<T extends boolean = true> {
  * via the `definition` "FeaturesBlock_select".
  */
 export interface FeaturesBlockSelect<T extends boolean = true> {
-  background?: T;
+  backgroundColor?: T;
   tagline?: T;
   richText?: T;
   features?:
@@ -2185,6 +2185,18 @@ export interface NavSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InlineIconBlock".
+ */
+export interface InlineIconBlock {
+  icon: number | Icon;
+  textColor?: string | null;
+  backgroundColor?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'inlineIcon';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

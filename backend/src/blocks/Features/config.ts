@@ -1,4 +1,6 @@
+import colorField from '@/fields/Color/config'
 import { link } from '@/fields/link'
+import richTextBase from '@/fields/richTextBase'
 import {
   FixedToolbarFeature,
   HeadingFeature,
@@ -11,42 +13,44 @@ const Features: Block = {
   slug: 'featuresBlock',
   interfaceName: 'FeaturesBlock',
   fields: [
-    {
-      name: 'background',
-      label: 'Background',
-      type: 'select',
-      defaultValue: 'dark',
-      options: [
-        {
-          label: 'Light',
-          value: 'light',
-        },
-        {
-          label: 'Dark',
-          value: 'dark',
-        },
-      ],
-    },
+    // {
+    //   name: 'background',
+    //   label: 'Background',
+    //   type: 'select',
+    //   defaultValue: 'dark',
+    //   options: [
+    //     {
+    //       label: 'Light',
+    //       value: 'light',
+    //     },
+    //     {
+    //       label: 'Dark',
+    //       value: 'dark',
+    //     },
+    //   ],
+    // },
+    colorField({ name: 'backgroundColor', label: 'Background Color', prefix: 'bg-' }),
     {
       name: 'tagline',
       label: 'Tagline',
       type: 'text',
     },
-    {
-      name: 'richText',
-      type: 'richText',
-      label: 'Title',
-      editor: lexicalEditor({
-        features: ({ rootFeatures }) => {
-          return [
-            ...rootFeatures,
-            HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-            FixedToolbarFeature(),
-            InlineToolbarFeature(),
-          ]
-        },
-      }),
-    },
+    // {
+    //   name: 'richText',
+    //   type: 'richText',
+    //   label: 'Title',
+    //   editor: lexicalEditor({
+    //     features: ({ rootFeatures }) => {
+    //       return [
+    //         ...rootFeatures,
+    //         HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+    //         FixedToolbarFeature(),
+    //         InlineToolbarFeature(),
+    //       ]
+    //     },
+    //   }),
+    // },
+    richTextBase({ name: 'richText', label: 'Title' }),
     {
       name: 'features',
       type: 'array',

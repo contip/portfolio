@@ -1,11 +1,11 @@
 import type { Block } from 'payload'
-import richText from '@/fields/richText'
+import richTextBase from '@/fields/richTextBase'
 
 export const BlogArchive: Block = {
   slug: 'blogArchive',
   interfaceName: 'BlogArchiveBlock',
   fields: [
-    richText({ name: 'introContent' }),
+    richTextBase({ name: 'introContent' }),
     {
       name: 'populateBy',
       type: 'select',

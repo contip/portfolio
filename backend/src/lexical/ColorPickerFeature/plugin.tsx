@@ -5,6 +5,7 @@ import { useLexicalComposerContext } from '@payloadcms/richtext-lexical/lexical/
 import {
   $getNodeByKey,
   $getSelection,
+  $isNodeSelection,
   $isRangeSelection,
   $getState,
   $setState,
@@ -12,6 +13,7 @@ import {
   COMMAND_PRIORITY_EDITOR,
   TextNode,
 } from '@payloadcms/richtext-lexical/lexical'
+import { $isInlineBlockNode } from '@payloadcms/richtext-lexical/client'
 import { $forEachSelectedTextNode } from '@payloadcms/richtext-lexical/lexical/selection'
 import type { PluginComponent } from '@payloadcms/richtext-lexical'
 import {
@@ -34,6 +36,14 @@ const backgroundStateConfig = createState('background', {
 
 type Color = { title: string; hex: string }
 type RawCategory = { name: string; colors: Color[] }
+type InlineIconFields = {
+  blockType?: string
+  id?: string
+  textColor?: string | null
+  backgroundColor?: string | null
+  icon?: unknown
+  [key: string]: unknown
+}
 
 const colorHexByTitle = new Map<string, string>(
   (rawColors as RawCategory[]).flatMap((category) =>
@@ -61,17 +71,48 @@ export const ColorPickerPlugin: PluginComponent = () => {
     (payload: ApplyColorPayload) => {
       editor.update(() => {
         const selection = $getSelection()
-        if (!$isRangeSelection(selection)) {
+        if ($isRangeSelection(selection)) {
+          const stateConfig = payload.type === 'text' ? colorStateConfig : backgroundStateConfig
+          const stateValue = payload.color || undefined
+
+          // Apply state to each selected text node
+          $forEachSelectedTextNode((textNode) => {
+            $setState(textNode, stateConfig, stateValue)
+          })
           return
         }
 
-        const stateConfig = payload.type === 'text' ? colorStateConfig : backgroundStateConfig
-        const stateValue = payload.color || undefined
+        if ($isNodeSelection(selection)) {
+          const nodes = selection.getNodes()
+          nodes.forEach((node) => {
+            if (!$isInlineBlockNode(node)) {
+              return
+            }
 
-        // Apply state to each selected text node
-        $forEachSelectedTextNode((textNode) => {
-          $setState(textNode, stateConfig, stateValue)
-        })
+            const fields = node.getFields() as InlineIconFields
+            if (fields.blockType !== 'inlineIcon') {
+              return
+            }
+
+            const id = typeof fields.id === 'string' ? fields.id : ''
+            if (!id) {
+              return
+            }
+
+            const nextFields = {
+              ...fields,
+              id,
+              blockType: 'inlineIcon',
+            }
+            if (payload.type === 'text') {
+              nextFields.textColor = payload.color
+            } else {
+              nextFields.backgroundColor = payload.color
+            }
+
+            node.setFields(nextFields)
+          })
+        }
       })
     },
     [editor],
