@@ -1,25 +1,35 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
+  // Add new columns (IF NOT EXISTS for idempotency)
   await db.execute(sql`
-   ALTER TABLE "pages_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "_pages_v_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "posts_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "_posts_v_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "services_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "_services_v_blocks_features_block" ADD COLUMN "background_color" varchar;
-  ALTER TABLE "pages_blocks_features_block" DROP COLUMN "background";
-  ALTER TABLE "_pages_v_blocks_features_block" DROP COLUMN "background";
-  ALTER TABLE "posts_blocks_features_block" DROP COLUMN "background";
-  ALTER TABLE "_posts_v_blocks_features_block" DROP COLUMN "background";
-  ALTER TABLE "services_blocks_features_block" DROP COLUMN "background";
-  ALTER TABLE "_services_v_blocks_features_block" DROP COLUMN "background";
-  DROP TYPE "public"."enum_pages_blocks_features_block_background";
-  DROP TYPE "public"."enum__pages_v_blocks_features_block_background";
-  DROP TYPE "public"."enum_posts_blocks_features_block_background";
-  DROP TYPE "public"."enum__posts_v_blocks_features_block_background";
-  DROP TYPE "public"."enum_services_blocks_features_block_background";
-  DROP TYPE "public"."enum__services_v_blocks_features_block_background";`)
+    ALTER TABLE "pages_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+    ALTER TABLE "_pages_v_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+    ALTER TABLE "posts_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+    ALTER TABLE "_posts_v_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+    ALTER TABLE "services_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+    ALTER TABLE "_services_v_blocks_features_block" ADD COLUMN IF NOT EXISTS "background_color" varchar;
+  `)
+
+  // Drop old columns if they exist (they were already dropped in production by CASCADE)
+  await db.execute(sql`
+    ALTER TABLE "pages_blocks_features_block" DROP COLUMN IF EXISTS "background";
+    ALTER TABLE "_pages_v_blocks_features_block" DROP COLUMN IF EXISTS "background";
+    ALTER TABLE "posts_blocks_features_block" DROP COLUMN IF EXISTS "background";
+    ALTER TABLE "_posts_v_blocks_features_block" DROP COLUMN IF EXISTS "background";
+    ALTER TABLE "services_blocks_features_block" DROP COLUMN IF EXISTS "background";
+    ALTER TABLE "_services_v_blocks_features_block" DROP COLUMN IF EXISTS "background";
+  `)
+
+  // Drop old enum types if they exist
+  await db.execute(sql`
+    DROP TYPE IF EXISTS "public"."enum_pages_blocks_features_block_background" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum__pages_v_blocks_features_block_background" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum_posts_blocks_features_block_background" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum__posts_v_blocks_features_block_background" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum_services_blocks_features_block_background" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum__services_v_blocks_features_block_background" CASCADE;
+  `)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
