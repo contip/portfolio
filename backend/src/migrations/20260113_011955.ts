@@ -8,12 +8,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "_posts_v_blocks_features_block" RENAME COLUMN "background" TO "background_color";
   ALTER TABLE "services_blocks_features_block" RENAME COLUMN "background" TO "background_color";
   ALTER TABLE "_services_v_blocks_features_block" RENAME COLUMN "background" TO "background_color";
-  DROP TYPE "public"."enum_pages_blocks_features_block_background";
-  DROP TYPE "public"."enum__pages_v_blocks_features_block_background";
-  DROP TYPE "public"."enum_posts_blocks_features_block_background";
-  DROP TYPE "public"."enum__posts_v_blocks_features_block_background";
-  DROP TYPE "public"."enum_services_blocks_features_block_background";
-  DROP TYPE "public"."enum__services_v_blocks_features_block_background";`)
+  DROP TYPE IF EXISTS "public"."enum_pages_blocks_features_block_background" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum__pages_v_blocks_features_block_background" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum_posts_blocks_features_block_background" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum__posts_v_blocks_features_block_background" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum_services_blocks_features_block_background" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum__services_v_blocks_features_block_background" CASCADE;`)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
