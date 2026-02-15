@@ -31,13 +31,37 @@ const buildCloudFrontPaths = (
     .forEach((tag) => {
       if (tag.startsWith("category:")) {
         const slug = tag.split("category:")[1];
-        if (slug) output.add(`/posts/category/${slug}/*`);
+        if (slug) output.add(`/blog/category/${slug}/*`);
+      }
+      if (tag.startsWith("categories-")) {
+        const slug = tag.replace("categories-", "");
+        if (slug) output.add(`/blog/category/${slug}`);
+      }
+      if (tag.startsWith("posts-")) {
+        const slug = tag.replace("posts-", "");
+        if (slug) output.add(`/blog/${slug}`);
+      }
+      if (tag.startsWith("services-")) {
+        const slug = tag.replace("services-", "");
+        if (slug) output.add(`/services/${slug}`);
+      }
+      if (tag.startsWith("caseStudies-")) {
+        const slug = tag.replace("caseStudies-", "");
+        if (slug) output.add(`/case-studies/${slug}`);
+      }
+      if (tag.startsWith("pages-")) {
+        const slug = tag.replace("pages-", "");
+        output.add(slug === "home" ? "/" : `/${slug}`);
       }
       if (tag === "static-sitemap") {
         output.add("/sitemap.xml");
         output.add("/sitemap.xml.gz");
       }
-      if (tag === "global_nav" || tag === "global_footer") {
+      if (
+        tag === "global_nav" ||
+        tag === "global_footer" ||
+        tag === "global_about"
+      ) {
         output.add("/*");
       }
     });

@@ -1,12 +1,6 @@
 import colorField from '@/fields/Color/config'
 import { link } from '@/fields/link'
 import richTextBase from '@/fields/richTextBase'
-import {
-  FixedToolbarFeature,
-  HeadingFeature,
-  InlineToolbarFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
 import { Block } from 'payload'
 
 const Features: Block = {

@@ -10,6 +10,7 @@ import { Lizards } from './collections/Lizards'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Services } from './collections/Services'
+import { CaseStudies } from './collections/CaseStudies'
 import { Categories } from './collections/Categories'
 import { Icons } from './collections/Icons'
 import Footer from './globals/Footer'
@@ -17,6 +18,7 @@ import Nav from './globals/Nav'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
 import verifyTurnstile from './endpoints/verifyTurnstile'
+import seedEndpoint from './endpoints/seed'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -28,7 +30,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, Posts, Services, Categories, Icons, Lizards],
+  collections: [Users, Media, Pages, Posts, Services, CaseStudies, Categories, Icons, Lizards],
   globals: [Footer, Nav],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -42,6 +44,11 @@ export default buildConfig({
       path: '/verify-turnstile',
       method: 'post',
       handler: verifyTurnstile,
+    },
+    {
+      path: '/seed',
+      method: 'post',
+      handler: seedEndpoint,
     },
   ],
   db: postgresAdapter({

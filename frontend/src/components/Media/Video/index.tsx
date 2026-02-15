@@ -26,6 +26,7 @@ export const Video: React.FC<VideoProps> = (props) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay)
   const [isMuted, setIsMuted] = useState(muted)
   const [progress, setProgress] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -69,7 +70,9 @@ export const Video: React.FC<VideoProps> = (props) => {
 
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current) return
-    const currentProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100
+    const current = videoRef.current.currentTime
+    const currentProgress = (current / videoRef.current.duration) * 100
+    setCurrentTime(current)
     setProgress(currentProgress)
   }, [])
 
@@ -171,7 +174,7 @@ export const Video: React.FC<VideoProps> = (props) => {
 
             {/* Duration */}
             <span className="text-white text-sm">
-              {formatTime(videoRef.current?.currentTime || 0)} / {formatTime(duration)}
+              {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 

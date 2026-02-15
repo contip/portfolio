@@ -7,6 +7,9 @@ import { CallToAction } from '@/blocks/CallToAction/config'
 import { hero } from '@/heros/config'
 import Features from '@/blocks/Features/config'
 import FormBlock from '@/blocks/Form/config'
+import { MediaBlock } from '@/blocks/MediaBlock/config'
+import MediaGrid from '@/blocks/MediaGrid/config'
+import { Code } from '@/blocks/Code/config'
 import { populatePublishedAt } from '@/hooks/populate-published-at'
 import { generatePreviewPath } from '@/utilities/generatePreviewPath'
 import { revalidateService, revalidateDelete } from './hooks/revalidateService'
@@ -65,7 +68,7 @@ export const Services: CollectionConfig = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [Content, CallToAction, Features, FormBlock],
+              blocks: [Content, CallToAction, Features, FormBlock, MediaBlock, MediaGrid, Code],
               required: true,
             },
           ],

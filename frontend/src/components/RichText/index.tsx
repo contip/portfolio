@@ -1,4 +1,9 @@
 import { MediaBlock } from "@/blocks/Media";
+import { CallToActionBlock } from "@/blocks/CallToAction";
+import { FormBlock } from "@/blocks/Form";
+import { MediaGridBlock } from "@/blocks/MediaGrid";
+import { BlogHighlightBlock } from "@/blocks/BlogHighlight";
+import { CodeBlock } from "@/blocks/Code";
 import {
   DefaultNodeTypes,
   SerializedBlockNode,
@@ -14,11 +19,9 @@ import {
 import {
   MediaBlock as MediaBlockProps,
   MediaGridBlock as MediaGridBlockProps,
-  BlogArchiveBlock as BlogArchiveBlockProps,
   CallToActionBlock as CallToActionBlockProps,
   CodeBlock as CodeBlockProps,
   BlogHighlightBlock as BlogHighlightBlockProps,
-  FeaturesBlock as FeaturesBlockProps,
   FormBlock as FormBlockProps,
   Icon as IconProps,
 } from "@/types/payload-types";
@@ -39,12 +42,10 @@ type NodeTypes =
   | SerializedBlockNode<
       | CallToActionBlockProps
       | MediaBlockProps
-      | FeaturesBlockProps
       | CodeBlockProps
       | FormBlockProps
       | MediaGridBlockProps
       | BlogHighlightBlockProps
-      | BlogArchiveBlockProps
     >
   | SerializedInlineBlockNode<InlineIconFields>;
 
@@ -53,8 +54,19 @@ const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   if (typeof value !== "object") {
     throw new Error("Expected value to be an object");
   }
+
   const slug = value.slug;
-  return relationTo === "posts" ? `/posts/${slug}` : `/${slug}`;
+
+  if (relationTo === "posts") return `/blog/${slug}`;
+  if (relationTo === "services") return `/services/${slug}`;
+  if (relationTo === "caseStudies") return `/case-studies/${slug}`;
+
+  if (relationTo === "categories") {
+    if ("url" in value && typeof value.url === "string") return value.url;
+    return `/blog/category/${slug}`;
+  }
+
+  return `/${slug}`;
 };
 
 const jsxConverters: JSXConvertersFunction<NodeTypes> = ({
@@ -63,6 +75,10 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({
   ...defaultConverters,
   ...TextJSXConverter,
   ...LinkJSXConverter({ internalDocToHref }),
+  linebreak: () => <span className="rt-linebreak" aria-hidden="true" />,
+  horizontalrule: () => (
+    <span className="rt-divider" role="separator" aria-hidden="true" />
+  ),
   blocks: {
     mediaBlock: ({ node }) => (
       <MediaBlock
@@ -74,6 +90,11 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({
         disableInnerContainer={true}
       />
     ),
+    mediaGrid: ({ node }) => <MediaGridBlock {...node.fields} />,
+    cta: ({ node }) => <CallToActionBlock {...node.fields} />,
+    formBlock: ({ node }) => <FormBlock {...node.fields} />,
+    blogHighlight: ({ node }) => <BlogHighlightBlock {...node.fields} />,
+    code: ({ node }) => <CodeBlock {...node.fields} />,
   },
   inlineBlocks: {
     inlineIcon: ({ node }) => {

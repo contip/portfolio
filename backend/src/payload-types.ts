@@ -72,6 +72,7 @@ export interface Config {
     pages: Page;
     posts: Post;
     services: Service;
+    caseStudies: CaseStudy;
     categories: Category;
     icons: Icon;
     lizards: Lizard;
@@ -95,6 +96,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
+    caseStudies: CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
     lizards: LizardsSelect<false> | LizardsSelect<true>;
@@ -279,6 +281,18 @@ export interface Page {
               | ({
                   relationTo: 'posts';
                   value: number | Post;
+                } | null)
+              | ({
+                  relationTo: 'services';
+                  value: number | Service;
+                } | null)
+              | ({
+                  relationTo: 'caseStudies';
+                  value: number | CaseStudy;
+                } | null)
+              | ({
+                  relationTo: 'categories';
+                  value: number | Category;
                 } | null);
             url?: string | null;
             label: string;
@@ -293,7 +307,17 @@ export interface Page {
     media?: (number | null) | Media;
     bgColor?: string | null;
   };
-  layout: (ContentBlock | CallToActionBlock | FeaturesBlock | FormBlock | BlogArchiveBlock | BlogHighlightBlock)[];
+  layout: (
+    | ContentBlock
+    | CallToActionBlock
+    | FeaturesBlock
+    | FormBlock
+    | BlogArchiveBlock
+    | BlogHighlightBlock
+    | MediaBlock
+    | MediaGridBlock
+    | CodeBlock
+  )[];
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -318,7 +342,7 @@ export interface Post {
   title: string;
   description: string;
   heroImage?: (number | null) | Media;
-  layout: (ContentBlock | FeaturesBlock | FormBlock)[];
+  layout: (ContentBlock | FeaturesBlock | FormBlock | MediaBlock | MediaGridBlock | CodeBlock)[];
   relatedPosts?: (number | Post)[] | null;
   category?: (number | null) | Category;
   meta?: {
@@ -329,6 +353,18 @@ export interface Post {
      */
     image?: (number | null) | Media;
   };
+  /**
+   * Highlight this post on the blog landing page.
+   */
+  featured?: boolean | null;
+  /**
+   * Higher numbers appear first in featured placements.
+   */
+  featuredRank?: number | null;
+  /**
+   * Estimated minutes to read (optional).
+   */
+  readingTime?: number | null;
   publishedAt?: string | null;
   author?: (number | null) | User;
   populatedAuthor?: {
@@ -411,6 +447,18 @@ export interface FeaturesBlock {
             | ({
                 relationTo: 'posts';
                 value: number | Post;
+              } | null)
+            | ({
+                relationTo: 'services';
+                value: number | Service;
+              } | null)
+            | ({
+                relationTo: 'caseStudies';
+                value: number | CaseStudy;
+              } | null)
+            | ({
+                relationTo: 'categories';
+                value: number | Category;
               } | null);
           url?: string | null;
           label: string;
@@ -436,6 +484,287 @@ export interface Icon {
   svg: string;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  title: string;
+  /**
+   * This is the blurb that appears in the nav dropdown. Max length 45 characters.
+   */
+  description: string;
+  hero: {
+    type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
+    richText: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    links?:
+      | {
+          link: {
+            type?: ('reference' | 'custom') | null;
+            newTab?: boolean | null;
+            reference?:
+              | ({
+                  relationTo: 'pages';
+                  value: number | Page;
+                } | null)
+              | ({
+                  relationTo: 'posts';
+                  value: number | Post;
+                } | null)
+              | ({
+                  relationTo: 'services';
+                  value: number | Service;
+                } | null)
+              | ({
+                  relationTo: 'caseStudies';
+                  value: number | CaseStudy;
+                } | null)
+              | ({
+                  relationTo: 'categories';
+                  value: number | Category;
+                } | null);
+            url?: string | null;
+            label: string;
+            /**
+             * Choose how the link should be rendered.
+             */
+            appearance?: ('default' | 'outline' | 'secondary' | 'ghost' | 'link') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    media?: (number | null) | Media;
+    bgColor?: string | null;
+  };
+  layout: (ContentBlock | CallToActionBlock | FeaturesBlock | FormBlock | MediaBlock | MediaGridBlock | CodeBlock)[];
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
+  publishedAt?: string | null;
+  slug?: string | null;
+  service?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "caseStudies".
+ */
+export interface CaseStudy {
+  id: number;
+  title: string;
+  summary: string;
+  clientName?: string | null;
+  industry?: string | null;
+  engagementDuration?: string | null;
+  heroImage?: (number | null) | Media;
+  hero: {
+    type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
+    richText: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    links?:
+      | {
+          link: {
+            type?: ('reference' | 'custom') | null;
+            newTab?: boolean | null;
+            reference?:
+              | ({
+                  relationTo: 'pages';
+                  value: number | Page;
+                } | null)
+              | ({
+                  relationTo: 'posts';
+                  value: number | Post;
+                } | null)
+              | ({
+                  relationTo: 'services';
+                  value: number | Service;
+                } | null)
+              | ({
+                  relationTo: 'caseStudies';
+                  value: number | CaseStudy;
+                } | null)
+              | ({
+                  relationTo: 'categories';
+                  value: number | Category;
+                } | null);
+            url?: string | null;
+            label: string;
+            /**
+             * Choose how the link should be rendered.
+             */
+            appearance?: ('default' | 'outline' | 'secondary' | 'ghost' | 'link') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    media?: (number | null) | Media;
+    bgColor?: string | null;
+  };
+  keyResults?:
+    | {
+        label: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  layout: (ContentBlock | CallToActionBlock | FormBlock | MediaBlock | MediaGridBlock | CodeBlock)[];
+  services?: (number | Service)[] | null;
+  relatedCaseStudies?: (number | CaseStudy)[] | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
+  publishedAt?: string | null;
+  slug?: string | null;
+  caseStudy?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  /**
+   * Feature this category on the blog landing page.
+   */
+  featured?: boolean | null;
+  /**
+   * Higher numbers appear first in featured placements.
+   */
+  featuredRank?: number | null;
+  title: string;
+  description: string;
+  /**
+   * Image for this category, used in the posts categories grid
+   */
+  image?: (number | null) | Media;
+  fullTitle?: string | null;
+  url?: string | null;
+  parentId?: (number | null) | Category;
+  posts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  slug?: string | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Category;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CallToActionBlock".
+ */
+export interface CallToActionBlock {
+  richText: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  link: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null)
+      | ({
+          relationTo: 'services';
+          value: number | Service;
+        } | null)
+      | ({
+          relationTo: 'caseStudies';
+          value: number | CaseStudy;
+        } | null)
+      | ({
+          relationTo: 'categories';
+          value: number | Category;
+        } | null);
+    url?: string | null;
+    label: string;
+    /**
+     * Choose how the link should be rendered.
+     */
+    appearance?: ('default' | 'outline') | null;
+  };
+  backgroundColor?: string | null;
+  bgImage?: (number | null) | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'cta';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -651,88 +980,36 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
+ * via the `definition` "MediaBlock".
  */
-export interface Category {
-  id: number;
-  title: string;
-  description: string;
-  /**
-   * Image for this category, used in the posts categories grid
-   */
-  image?: (number | null) | Media;
-  fullTitle?: string | null;
-  url?: string | null;
-  parentId?: (number | null) | Category;
-  posts?: {
-    docs?: (number | Post)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-  };
-  slug?: string | null;
-  breadcrumbs?:
-    | {
-        doc?: (number | null) | Category;
-        url?: string | null;
-        label?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
+export interface MediaBlock {
+  media: number | Media;
+  link?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CallToActionBlock".
+ * via the `definition` "MediaGridBlock".
  */
-export interface CallToActionBlock {
-  richText: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  link: {
-    type?: ('reference' | 'custom') | null;
-    newTab?: boolean | null;
-    reference?:
-      | ({
-          relationTo: 'pages';
-          value: number | Page;
-        } | null)
-      | ({
-          relationTo: 'posts';
-          value: number | Post;
-        } | null);
-    url?: string | null;
-    label: string;
-    /**
-     * Choose how the link should be rendered.
-     */
-    appearance?: ('default' | 'outline') | null;
-  };
-  backgroundColor?: string | null;
-  bgImage?: (number | null) | Media;
+export interface MediaGridBlock {
+  media?: (number | Media)[] | null;
+  caption?: string | null;
   id?: string | null;
   blockName?: string | null;
-  blockType: 'cta';
+  blockType: 'mediaGrid';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CodeBlock".
+ */
+export interface CodeBlock {
+  language?: ('typescript' | 'javascript' | 'css' | 'c' | 'python') | null;
+  code: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'code';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -782,77 +1059,6 @@ export interface BlogHighlightBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'blogHighlight';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "services".
- */
-export interface Service {
-  id: number;
-  title: string;
-  /**
-   * This is the blurb that appears in the nav dropdown. Max length 45 characters.
-   */
-  description: string;
-  hero: {
-    type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
-    richText: {
-      root: {
-        type: string;
-        children: {
-          type: any;
-          version: number;
-          [k: string]: unknown;
-        }[];
-        direction: ('ltr' | 'rtl') | null;
-        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-        indent: number;
-        version: number;
-      };
-      [k: string]: unknown;
-    };
-    links?:
-      | {
-          link: {
-            type?: ('reference' | 'custom') | null;
-            newTab?: boolean | null;
-            reference?:
-              | ({
-                  relationTo: 'pages';
-                  value: number | Page;
-                } | null)
-              | ({
-                  relationTo: 'posts';
-                  value: number | Post;
-                } | null);
-            url?: string | null;
-            label: string;
-            /**
-             * Choose how the link should be rendered.
-             */
-            appearance?: ('default' | 'outline' | 'secondary' | 'ghost' | 'link') | null;
-          };
-          id?: string | null;
-        }[]
-      | null;
-    media?: (number | null) | Media;
-    bgColor?: string | null;
-  };
-  layout: (ContentBlock | CallToActionBlock | FeaturesBlock | FormBlock)[];
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-  };
-  publishedAt?: string | null;
-  slug?: string | null;
-  service?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1086,12 +1292,16 @@ export interface Redirect {
           value: number | Category;
         } | null)
       | ({
-          relationTo: 'lizards';
-          value: number | Lizard;
-        } | null)
-      | ({
           relationTo: 'services';
           value: number | Service;
+        } | null)
+      | ({
+          relationTo: 'caseStudies';
+          value: number | CaseStudy;
+        } | null)
+      | ({
+          relationTo: 'lizards';
+          value: number | Lizard;
         } | null);
     url?: string | null;
   };
@@ -1142,6 +1352,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'services';
         value: number | Service;
+      } | null)
+    | ({
+        relationTo: 'caseStudies';
+        value: number | CaseStudy;
       } | null)
     | ({
         relationTo: 'categories';
@@ -1340,6 +1554,9 @@ export interface PagesSelect<T extends boolean = true> {
         formBlock?: T | FormBlockSelect<T>;
         blogArchive?: T | BlogArchiveBlockSelect<T>;
         blogHighlight?: T | BlogHighlightBlockSelect<T>;
+        mediaBlock?: T | MediaBlockSelect<T>;
+        mediaGrid?: T | MediaGridBlockSelect<T>;
+        code?: T | CodeBlockSelect<T>;
       };
   meta?:
     | T
@@ -1460,6 +1677,36 @@ export interface BlogHighlightBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaBlock_select".
+ */
+export interface MediaBlockSelect<T extends boolean = true> {
+  media?: T;
+  link?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaGridBlock_select".
+ */
+export interface MediaGridBlockSelect<T extends boolean = true> {
+  media?: T;
+  caption?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CodeBlock_select".
+ */
+export interface CodeBlockSelect<T extends boolean = true> {
+  language?: T;
+  code?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
@@ -1472,6 +1719,9 @@ export interface PostsSelect<T extends boolean = true> {
         content?: T | ContentBlockSelect<T>;
         featuresBlock?: T | FeaturesBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
+        mediaBlock?: T | MediaBlockSelect<T>;
+        mediaGrid?: T | MediaGridBlockSelect<T>;
+        code?: T | CodeBlockSelect<T>;
       };
   relatedPosts?: T;
   category?: T;
@@ -1482,6 +1732,9 @@ export interface PostsSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  featured?: T;
+  featuredRank?: T;
+  readingTime?: T;
   publishedAt?: T;
   author?: T;
   populatedAuthor?:
@@ -1533,6 +1786,9 @@ export interface ServicesSelect<T extends boolean = true> {
         cta?: T | CallToActionBlockSelect<T>;
         featuresBlock?: T | FeaturesBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
+        mediaBlock?: T | MediaBlockSelect<T>;
+        mediaGrid?: T | MediaGridBlockSelect<T>;
+        code?: T | CodeBlockSelect<T>;
       };
   meta?:
     | T
@@ -1550,16 +1806,57 @@ export interface ServicesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories_select".
+ * via the `definition` "caseStudies_select".
  */
-export interface CategoriesSelect<T extends boolean = true> {
+export interface CaseStudiesSelect<T extends boolean = true> {
   title?: T;
-  description?: T;
-  image?: T;
-  fullTitle?: T;
-  url?: T;
-  parentId?: T;
-  posts?: T;
+  summary?: T;
+  clientName?: T;
+  industry?: T;
+  engagementDuration?: T;
+  heroImage?: T;
+  hero?:
+    | T
+    | {
+        type?: T;
+        richText?: T;
+        links?:
+          | T
+          | {
+              link?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                    label?: T;
+                    appearance?: T;
+                  };
+              id?: T;
+            };
+        media?: T;
+        bgColor?: T;
+      };
+  keyResults?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  layout?:
+    | T
+    | {
+        content?: T | ContentBlockSelect<T>;
+        cta?: T | CallToActionBlockSelect<T>;
+        formBlock?: T | FormBlockSelect<T>;
+        mediaBlock?: T | MediaBlockSelect<T>;
+        mediaGrid?: T | MediaGridBlockSelect<T>;
+        code?: T | CodeBlockSelect<T>;
+      };
+  services?: T;
+  relatedCaseStudies?: T;
   meta?:
     | T
     | {
@@ -1567,7 +1864,35 @@ export interface CategoriesSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  publishedAt?: T;
   slug?: T;
+  caseStudy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  featured?: T;
+  featuredRank?: T;
+  title?: T;
+  description?: T;
+  image?: T;
+  fullTitle?: T;
+  url?: T;
+  parentId?: T;
+  posts?: T;
+  slug?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   breadcrumbs?:
     | T
     | {
@@ -1954,6 +2279,18 @@ export interface Footer {
             | ({
                 relationTo: 'posts';
                 value: number | Post;
+              } | null)
+            | ({
+                relationTo: 'services';
+                value: number | Service;
+              } | null)
+            | ({
+                relationTo: 'caseStudies';
+                value: number | CaseStudy;
+              } | null)
+            | ({
+                relationTo: 'categories';
+                value: number | Category;
               } | null);
           url?: string | null;
           label: string;
@@ -1979,6 +2316,18 @@ export interface Footer {
             | ({
                 relationTo: 'posts';
                 value: number | Post;
+              } | null)
+            | ({
+                relationTo: 'services';
+                value: number | Service;
+              } | null)
+            | ({
+                relationTo: 'caseStudies';
+                value: number | CaseStudy;
+              } | null)
+            | ({
+                relationTo: 'categories';
+                value: number | Category;
               } | null);
           url?: string | null;
           /**
@@ -2012,6 +2361,18 @@ export interface Nav {
             | ({
                 relationTo: 'posts';
                 value: number | Post;
+              } | null)
+            | ({
+                relationTo: 'services';
+                value: number | Service;
+              } | null)
+            | ({
+                relationTo: 'caseStudies';
+                value: number | CaseStudy;
+              } | null)
+            | ({
+                relationTo: 'categories';
+                value: number | Category;
               } | null);
           url?: string | null;
           label: string;
@@ -2040,6 +2401,18 @@ export interface Nav {
                 | ({
                     relationTo: 'posts';
                     value: number | Post;
+                  } | null)
+                | ({
+                    relationTo: 'services';
+                    value: number | Service;
+                  } | null)
+                | ({
+                    relationTo: 'caseStudies';
+                    value: number | CaseStudy;
+                  } | null)
+                | ({
+                    relationTo: 'categories';
+                    value: number | Category;
                   } | null);
               url?: string | null;
               label: string;
@@ -2062,6 +2435,18 @@ export interface Nav {
                     | ({
                         relationTo: 'posts';
                         value: number | Post;
+                      } | null)
+                    | ({
+                        relationTo: 'services';
+                        value: number | Service;
+                      } | null)
+                    | ({
+                        relationTo: 'caseStudies';
+                        value: number | CaseStudy;
+                      } | null)
+                    | ({
+                        relationTo: 'categories';
+                        value: number | Category;
                       } | null);
                   url?: string | null;
                   label: string;
@@ -2197,39 +2582,6 @@ export interface InlineIconBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'inlineIcon';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaBlock".
- */
-export interface MediaBlock {
-  media: number | Media;
-  link?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaBlock';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaGridBlock".
- */
-export interface MediaGridBlock {
-  media?: (number | Media)[] | null;
-  caption?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaGrid';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CodeBlock".
- */
-export interface CodeBlock {
-  language?: ('typescript' | 'javascript' | 'css' | 'c' | 'python') | null;
-  code: string;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'code';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

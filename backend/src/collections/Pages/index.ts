@@ -7,6 +7,9 @@ import Features from '@/blocks/Features/config'
 import FormBlock from '@/blocks/Form/config'
 import { BlogArchive } from '@/blocks/BlogArchive/config'
 import BlogHighlight from '@/blocks/BlogHighlight/config'
+import { MediaBlock } from '@/blocks/MediaBlock/config'
+import MediaGrid from '@/blocks/MediaGrid/config'
+import { Code } from '@/blocks/Code/config'
 import { slugField } from '@/fields/slug'
 import { hero } from '@/heros/config'
 import { populatePublishedAt } from '@/hooks/populate-published-at'
@@ -56,7 +59,17 @@ export const Pages: CollectionConfig = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [Content, CallToAction, Features, FormBlock, BlogArchive, BlogHighlight],
+              blocks: [
+                Content,
+                CallToAction,
+                Features,
+                FormBlock,
+                BlogArchive,
+                BlogHighlight,
+                MediaBlock,
+                MediaGrid,
+                Code,
+              ],
               required: true,
             },
           ],

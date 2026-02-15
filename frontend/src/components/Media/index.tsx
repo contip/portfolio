@@ -3,7 +3,7 @@ import React, { Fragment } from "react";
 import type { Props } from "./types";
 import type { Media as MediaType } from "@/types/payload-types";
 
-import { Image } from "./Image";
+import { Image as MediaImage } from "./Image";
 import { Video } from "./Video";
 import { BackgroundVideo } from "./BackgroundVideo";
 
@@ -12,7 +12,7 @@ export const Media: React.FC<Props> = (props) => {
 
   const isVideo =
     typeof resource === "object" && resource?.mimeType?.includes("video");
-  const Tag = (htmlElement as any) || Fragment;
+  const Tag = htmlElement || Fragment;
 
   // Use BackgroundVideo for video in fill mode (hero backgrounds, etc.)
   if (isVideo && fill && typeof resource === "object") {
@@ -37,7 +37,7 @@ export const Media: React.FC<Props> = (props) => {
           }
         : {})}
     >
-      {isVideo ? <Video {...props} /> : <Image {...props} />}
+      {isVideo ? <Video {...props} /> : <MediaImage {...props} />}
     </Tag>
   );
 };

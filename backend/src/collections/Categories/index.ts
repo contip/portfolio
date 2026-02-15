@@ -2,6 +2,8 @@ import type { CollectionConfig } from 'payload'
 import { anyone } from '@/collections/access/anyone'
 import { authenticated } from '@/collections/access/authenticated'
 import populateDynamicFields from './hooks/populate-dynamic-fields'
+import { generatePreviewPath } from '@/utilities/generatePreviewPath'
+import { revalidateCategories, revalidateDelete } from './hooks/revalidateCategories'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -12,12 +14,39 @@ export const Categories: CollectionConfig = {
     update: authenticated,
   },
   admin: {
+    defaultColumns: ['title', 'featured', 'updatedAt'],
     useAsTitle: 'title',
+    preview: (data, { req }) =>
+      generatePreviewPath({
+        slug: typeof data?.slug === 'string' ? data.slug : '',
+        collection: 'categories',
+        req,
+      }),
   },
   hooks: {
     beforeChange: [populateDynamicFields],
+    afterChange: [revalidateCategories],
+    afterDelete: [revalidateDelete],
   },
   fields: [
+    {
+      name: 'featured',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Feature this category on the blog landing page.',
+      },
+    },
+    {
+      name: 'featuredRank',
+      type: 'number',
+      admin: {
+        position: 'sidebar',
+        description: 'Higher numbers appear first in featured placements.',
+        condition: (data) => Boolean(data?.featured),
+      },
+    },
     {
       type: 'tabs',
       tabs: [

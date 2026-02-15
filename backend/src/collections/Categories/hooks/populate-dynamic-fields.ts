@@ -14,7 +14,7 @@ const generateFullTitle = (breadcrumbs: Category['breadcrumbs']): string | undef
 
 const generateUrl = (fullTitle: string): string => {
   if (fullTitle && fullTitle.length > 0) {
-    return `/posts/category/${fullTitle.replace(/ > /g, '--').toLowerCase().replace(/\s+/g, '-')}`
+    return `/blog/category/${fullTitle.replace(/ > /g, '--').toLowerCase().replace(/\s+/g, '-')}`
   }
 
   return ''

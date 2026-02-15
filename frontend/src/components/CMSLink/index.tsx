@@ -1,8 +1,9 @@
 import Link from "next/link";
 import React from "react";
+
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Page, Post } from "@/types/payload-types";
+import type { CaseStudy, Category, Page, Post, Service } from "@/types/payload-types";
 
 type LinkAppearance =
   | "default"
@@ -11,6 +12,8 @@ type LinkAppearance =
   | "ghost"
   | "link"
   | "destructive"
+  | "text"
+  | "null"
   | null
   | undefined;
 
@@ -18,14 +21,11 @@ type LinkType = {
   type?: ("reference" | "custom") | null;
   newTab?: boolean | null;
   reference?:
-    | ({
-        relationTo: "pages";
-        value: number | Page;
-      } | null)
-    | ({
-        relationTo: "posts";
-        value: number | Post;
-      } | null);
+    | ({ relationTo: "pages"; value: number | Page } | null)
+    | ({ relationTo: "posts"; value: number | Post } | null)
+    | ({ relationTo: "services"; value: number | Service } | null)
+    | ({ relationTo: "caseStudies"; value: number | CaseStudy } | null)
+    | ({ relationTo: "categories"; value: number | Category } | null);
   url?: string | null;
   label: string;
   appearance?: LinkAppearance;
@@ -37,6 +37,30 @@ interface CMSLinkProps {
   children?: React.ReactNode;
 }
 
+const resolveInternalHref = (link: LinkType): string => {
+  const reference = link.reference;
+  if (!reference || typeof reference.value !== "object" || !reference.value) {
+    return "";
+  }
+
+  const value = reference.value;
+
+  if (reference.relationTo === "categories") {
+    const category = value as Category;
+    if (typeof category.url === "string" && category.url) return category.url;
+    return category.slug ? `/blog/category/${category.slug}` : "";
+  }
+
+  const slug = value.slug;
+  if (!slug) return "";
+
+  if (reference.relationTo === "posts") return `/blog/${slug}`;
+  if (reference.relationTo === "services") return `/services/${slug}`;
+  if (reference.relationTo === "caseStudies") return `/case-studies/${slug}`;
+
+  return `/${slug}`;
+};
+
 export const CMSLink: React.FC<CMSLinkProps> = ({
   link,
   className,
@@ -45,7 +69,6 @@ export const CMSLink: React.FC<CMSLinkProps> = ({
   const {
     type,
     newTab,
-    reference,
     url,
     label,
     appearance = "default",
@@ -53,23 +76,20 @@ export const CMSLink: React.FC<CMSLinkProps> = ({
 
   let href: string = url || "";
 
-  if (type === "reference" && reference) {
-    const { relationTo, value } = reference;
-    if (typeof value === "object" && value !== null) {
-      const slug = value.slug;
-      href = relationTo === "posts" ? `/posts/${slug}` : `/${slug}`;
-    }
+  if (type === "reference") {
+    href = resolveInternalHref(link);
   }
 
   const newTabProps = newTab
     ? { target: "_blank", rel: "noopener noreferrer" }
     : {};
 
-  // Map appearance to button variant
+  const isTextLink = appearance === "text" || appearance === "null" || appearance === null;
+
   const getVariant = (
-    appearance: LinkAppearance
+    value: LinkAppearance
   ): "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" => {
-    switch (appearance) {
+    switch (value) {
       case "outline":
         return "outline";
       case "secondary":
@@ -86,7 +106,6 @@ export const CMSLink: React.FC<CMSLinkProps> = ({
   };
 
   const variant = getVariant(appearance);
-
   const linkContent = children || label;
 
   if (!href) {
@@ -94,6 +113,21 @@ export const CMSLink: React.FC<CMSLinkProps> = ({
       <Button variant={variant} className={className}>
         {linkContent}
       </Button>
+    );
+  }
+
+  if (isTextLink) {
+    return (
+      <Link
+        href={href}
+        {...newTabProps}
+        className={cn(
+          "inline-flex items-center gap-2 text-foreground transition-colors hover:text-primary",
+          className
+        )}
+      >
+        {linkContent}
+      </Link>
     );
   }
 

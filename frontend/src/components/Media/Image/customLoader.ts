@@ -13,7 +13,7 @@ interface ImageLoaderProps {
  * based on the requested width. This ensures we serve optimally-sized
  * images from CloudFront/S3 rather than the full-size original.
  */
-const customImageLoader = ({ src, width, media, quality = 75 }: ImageLoaderProps): string => {
+const customImageLoader = ({ src, width, media }: ImageLoaderProps): string => {
   // If no media object provided, just return the source URL
   if (!media || !media.url) {
     if (src.startsWith('http')) {

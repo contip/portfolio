@@ -3,7 +3,7 @@ import { Plugin } from 'payload'
 import { revalidateRedirects } from './hooks/revalidate-redirects'
 
 export const RedirectsPlugin: Plugin = redirectsPlugin({
-  collections: ['pages', 'posts', 'categories', 'lizards', 'services'],
+  collections: ['pages', 'posts', 'categories', 'services', 'caseStudies', 'lizards'],
   redirectTypes: ['307', '308'],
   overrides: {
     hooks: {

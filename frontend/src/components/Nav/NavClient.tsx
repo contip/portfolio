@@ -9,13 +9,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import type { Nav, Page, Post } from "@/types/payload-types";
+import type { CaseStudy, Category, Nav, Page, Post, Service } from "@/types/payload-types";
 import { cn } from "@/lib/utils";
 import MobileNav from "./MobileNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { LogoFull } from "@/components/Logo";
 
-// Professional nav link styles
 const navLinkStyles = cn(
   "relative inline-flex items-center justify-center px-6 py-3 text-xl font-semibold",
   "text-foreground/80 hover:text-foreground",
@@ -25,7 +24,6 @@ const navLinkStyles = cn(
   "transition-colors duration-200"
 );
 
-// Dropdown trigger styles
 const navTriggerStyles = cn(
   "relative inline-flex items-center justify-center gap-2 px-6 py-3 text-xl font-semibold",
   "text-foreground/80 hover:text-foreground",
@@ -41,23 +39,30 @@ interface NavClientProps {
 }
 
 type NavItem = NonNullable<Nav["navItems"]>[number];
-type DropdownLink = NonNullable<
-  NonNullable<NavItem["ddSettings"]>["ddLinks"]
->[number];
-type HeroLink = NonNullable<
-  NonNullable<NavItem["ddSettings"]>["hero"]
->["heroLink"];
+type DropdownLink = NonNullable<NonNullable<NavItem["ddSettings"]>["ddLinks"]>[number];
+type HeroLink = NonNullable<NonNullable<NavItem["ddSettings"]>["hero"]>["heroLink"];
 
 type LinkType = DropdownLink["link"] | NavItem["link"] | HeroLink;
 
 function getLinkHref(link: LinkType): string {
   if (link.type === "reference" && link.reference) {
     const { relationTo, value } = link.reference;
+
     if (typeof value === "object" && value !== null) {
-      const slug = (value as Page | Post).slug;
-      return relationTo === "posts" ? `/posts/${slug}` : `/${slug}`;
+      if (relationTo === "categories") {
+        if (typeof value.url === "string" && value.url) return value.url;
+        return value.slug ? `/blog/category/${value.slug}` : "/blog/category";
+      }
+
+      const slug = (value as Page | Post | Service | CaseStudy | Category).slug;
+      if (!slug) return "#";
+      if (relationTo === "posts") return `/blog/${slug}`;
+      if (relationTo === "services") return `/services/${slug}`;
+      if (relationTo === "caseStudies") return `/case-studies/${slug}`;
+      return `/${slug}`;
     }
   }
+
   return link.url || "#";
 }
 
@@ -127,12 +132,10 @@ const NavClient = ({ data }: NavClientProps) => {
 
   return (
     <>
-      {/* Logo */}
       <Link href="/" className="flex items-center">
         <LogoFull className="h-14 w-auto md:h-16" />
       </Link>
 
-      {/* Desktop Navigation */}
       <div className="hidden md:flex flex-1 justify-center">
         <NavigationMenu>
           <NavigationMenuList>
@@ -141,10 +144,7 @@ const NavClient = ({ data }: NavClientProps) => {
                 <NavigationMenuItem key={navItem.id}>
                   {navItem.type === "link" ? (
                     <NavigationMenuLink asChild>
-                      <Link
-                        href={getLinkHref(navItem.link)}
-                        className={navLinkStyles}
-                      >
+                      <Link href={getLinkHref(navItem.link)} className={navLinkStyles}>
                         {navItem.link.label}
                       </Link>
                     </NavigationMenuLink>
@@ -157,16 +157,14 @@ const NavClient = ({ data }: NavClientProps) => {
                         <ul
                           className={cn(
                             "grid gap-3 p-4",
-                            navItem.ddSettings?.enableHero &&
-                              navItem.ddSettings?.hero
+                            navItem.ddSettings?.enableHero && navItem.ddSettings?.hero
                               ? "md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]"
                               : "w-[400px] md:w-[500px] md:grid-cols-2 lg:w-[600px]"
                           )}
                         >
-                          {navItem.ddSettings?.enableHero &&
-                            navItem.ddSettings?.hero && (
-                              <HeroCard hero={navItem.ddSettings.hero} />
-                            )}
+                          {navItem.ddSettings?.enableHero && navItem.ddSettings?.hero && (
+                            <HeroCard hero={navItem.ddSettings.hero} />
+                          )}
                           {navItem.ddSettings?.ddLinks?.map((linkItem) => (
                             <ListItem
                               key={linkItem.id}
@@ -182,7 +180,6 @@ const NavClient = ({ data }: NavClientProps) => {
                 </NavigationMenuItem>
               ))
             ) : (
-              // Fallback navigation items
               <>
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
@@ -193,15 +190,22 @@ const NavClient = ({ data }: NavClientProps) => {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
-                    <Link href="/about" className={navLinkStyles}>
-                      About
+                    <Link href="/services" className={navLinkStyles}>
+                      Services
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
-                    <Link href="/contact" className={navLinkStyles}>
-                      Contact
+                    <Link href="/case-studies" className={navLinkStyles}>
+                      Case Studies
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href="/blog" className={navLinkStyles}>
+                      Blog
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -213,8 +217,6 @@ const NavClient = ({ data }: NavClientProps) => {
 
       <div className="flex items-center gap-2">
         <ThemeToggle className="hidden md:inline-flex" />
-
-        {/* Mobile Navigation */}
         <MobileNav data={data} />
       </div>
     </>

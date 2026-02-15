@@ -25,7 +25,14 @@ function getSpeciesLabel(species: string | null | undefined): string {
 }
 
 export default async function LizardsPage() {
-  const { docs: lizards } = await getCachedCollection<Lizard>("lizards");
+  let lizards: Lizard[] = [];
+
+  try {
+    const response = await getCachedCollection<Lizard>("lizards");
+    lizards = response.docs || [];
+  } catch {
+    lizards = [];
+  }
 
   return (
     <div className="min-h-screen">

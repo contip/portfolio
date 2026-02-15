@@ -7,6 +7,7 @@ export const PayloadAiPlugin: Plugin = payloadAiPlugin({
     posts: true,
     categories: true,
     services: true,
+    caseStudies: true,
     lizards: true,
   },
   // debugging: true,

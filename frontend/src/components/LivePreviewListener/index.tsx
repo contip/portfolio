@@ -6,10 +6,14 @@ import React from "react";
 
 export const LivePreviewListener: React.FC = () => {
   const router = useRouter();
+  const serverURL =
+    process.env.NEXT_PUBLIC_PAYLOAD_API_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    getClientSideURL();
   return (
     <PayloadLivePreview
       refresh={router.refresh}
-      serverURL={getClientSideURL()}
+      serverURL={serverURL}
     />
   );
 };

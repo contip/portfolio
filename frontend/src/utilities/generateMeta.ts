@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import type {
+  CaseStudy,
+  Category,
   Media,
   Page,
   Post,
@@ -31,6 +33,8 @@ export const generateMeta = async (args: {
     | Partial<Page>
     | Partial<Post>
     | Partial<Service>
+    | Partial<CaseStudy>
+    | Partial<Category>
     | Partial<Lizard>
     | null;
 }): Promise<Metadata> => {
@@ -40,7 +44,7 @@ export const generateMeta = async (args: {
 
   const title = doc?.meta?.title
     ? doc?.meta?.title
-    : "Peter Conti - Conti Digital";
+    : "Peter Conti | Software & Cloud Engineering Consultancy";
 
   return {
     description: doc?.meta?.description,

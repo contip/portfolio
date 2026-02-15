@@ -25,15 +25,28 @@ function getSpeciesLabel(species: string | null | undefined): string {
 }
 
 export async function generateStaticParams() {
-  const { docs: lizards } = await getCachedCollection<Lizard>("lizards");
-  return lizards.map((lizard) => ({
-    slug: lizard.slug,
-  }));
+  try {
+    const { docs: lizards } = await getCachedCollection<Lizard>("lizards");
+    if (!lizards.length) {
+      return [{ slug: "_placeholder" }];
+    }
+    return lizards.map((lizard) => ({
+      slug: lizard.slug,
+    }));
+  } catch {
+    return [{ slug: "_placeholder" }];
+  }
 }
 
 export default async function LizardPage({ params }: LizardPageProps) {
   const { slug } = await params;
-  const lizard = await getCachedDocument<Lizard>("lizards", slug);
+  let lizard: Lizard | null = null;
+
+  try {
+    lizard = await getCachedDocument<Lizard>("lizards", slug);
+  } catch {
+    lizard = null;
+  }
 
   if (!lizard) {
     notFound();

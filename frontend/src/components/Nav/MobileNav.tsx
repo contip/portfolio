@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Nav, Page, Post } from "@/types/payload-types";
+import type { CaseStudy, Category, Nav, Page, Post, Service } from "@/types/payload-types";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
 import { LogoIcon } from "@/components/Logo";
@@ -22,16 +22,23 @@ interface MobileNavProps {
 }
 
 type NavItem = NonNullable<Nav["navItems"]>[number];
-type DropdownLink = NonNullable<
-  NonNullable<NavItem["ddSettings"]>["ddLinks"]
->[number];
+type DropdownLink = NonNullable<NonNullable<NavItem["ddSettings"]>["ddLinks"]>[number];
 
 function getLinkHref(link: DropdownLink["link"] | NavItem["link"]): string {
   if (link.type === "reference" && link.reference) {
     const { relationTo, value } = link.reference;
     if (typeof value === "object" && value !== null) {
-      const slug = (value as Page | Post).slug;
-      return relationTo === "posts" ? `/posts/${slug}` : `/${slug}`;
+      if (relationTo === "categories") {
+        if (typeof value.url === "string" && value.url) return value.url;
+        return value.slug ? `/blog/category/${value.slug}` : "/blog/category";
+      }
+
+      const slug = (value as Page | Post | Service | CaseStudy | Category).slug;
+      if (!slug) return "#";
+      if (relationTo === "posts") return `/blog/${slug}`;
+      if (relationTo === "services") return `/services/${slug}`;
+      if (relationTo === "caseStudies") return `/case-studies/${slug}`;
+      return `/${slug}`;
     }
   }
   return link.url || "#";
@@ -64,13 +71,12 @@ const MobileNav = ({ data }: MobileNavProps) => {
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle className="flex items-center gap-3">
             <LogoIcon className="h-8 w-8" />
-            <span className="text-lg font-semibold">Peter T Conti</span>
+            <span className="text-lg font-semibold">Peter Conti</span>
           </SheetTitle>
         </SheetHeader>
 
         <ScrollArea className="flex-1 px-4 py-4">
           {activeDropdown ? (
-            // Dropdown submenu view
             <div className="space-y-2">
               <Button
                 variant="ghost"
@@ -107,7 +113,6 @@ const MobileNav = ({ data }: MobileNavProps) => {
               ))}
             </div>
           ) : (
-            // Main menu view
             <nav className="space-y-1">
               {navItems && navItems.length > 0 ? (
                 navItems.map((navItem) => (
@@ -138,7 +143,6 @@ const MobileNav = ({ data }: MobileNavProps) => {
                   </div>
                 ))
               ) : (
-                // Fallback navigation
                 <>
                   <Link
                     href="/"
@@ -151,24 +155,34 @@ const MobileNav = ({ data }: MobileNavProps) => {
                     Home
                   </Link>
                   <Link
-                    href="/about"
+                    href="/services"
                     onClick={handleLinkClick}
                     className={cn(
                       "flex w-full items-center rounded-md px-3 py-3 text-base font-medium transition-colors",
                       "hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
-                    About
+                    Services
                   </Link>
                   <Link
-                    href="/contact"
+                    href="/case-studies"
                     onClick={handleLinkClick}
                     className={cn(
                       "flex w-full items-center rounded-md px-3 py-3 text-base font-medium transition-colors",
                       "hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
-                    Contact
+                    Case Studies
+                  </Link>
+                  <Link
+                    href="/blog"
+                    onClick={handleLinkClick}
+                    className={cn(
+                      "flex w-full items-center rounded-md px-3 py-3 text-base font-medium transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    Blog
                   </Link>
                 </>
               )}

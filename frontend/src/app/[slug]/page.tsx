@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Redirects } from "@/components/Redirects";
 import { draftMode } from "next/headers";
-import { getCachedDocument, getCachedCollection } from "@/lib/payload";
+import { getCachedCollection, getCachedDocument, getDocument } from "@/lib/payload";
 import { type Page } from "@/types/payload-types";
-import { cache } from "react";
 import { generateMeta } from "@/utilities/generateMeta";
 import { LivePreviewListener } from "@/components/LivePreviewListener";
 import { RenderBlocks } from "@/blocks/RenderBlocks";
@@ -19,19 +18,17 @@ export async function generateStaticParams() {
       draft: false,
       limit: 10000,
     });
+
     const params = pages.docs
       ?.filter((doc) => doc.slug !== "home")
       .map(({ slug }) => ({ slug }));
 
-    // Next.js 16+ requires at least one result when using Cache Components
-    // Return "home" if no pages exist yet (e.g., during initial CI/CD build)
     if (!params || params.length === 0) {
       return [{ slug: "home" }];
     }
 
     return params;
   } catch {
-    // If API is unavailable during build, return home fallback
     return [{ slug: "home" }];
   }
 }
@@ -40,24 +37,22 @@ type Args = {
   params: Promise<{ slug: string }>;
 };
 
-const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = await draftMode();
-  const page = await getCachedDocument<Page>("pages", slug, { draft });
-  return page;
-});
-
 export default async function Page({ params }: Args) {
   const { isEnabled: draft } = await draftMode();
   const { slug = "home" } = await params;
   const decodedSlug = decodeURIComponent(slug);
   const url = "/" + decodedSlug;
-  let page: Page | null = null;
-  page = await queryPageBySlug({ slug: decodedSlug });
+
+  const page = draft
+    ? await getDocument<Page>("pages", decodedSlug, { draft })
+    : await getCachedDocument<Page>("pages", decodedSlug);
+
   if (!page) {
     return <Redirects url={url} />;
   }
 
   const { hero, layout } = page;
+
   return (
     <article>
       <Redirects disableNotFound url={url} />
@@ -73,12 +68,13 @@ export default async function Page({ params }: Args) {
 export async function generateMetadata({
   params: paramsPromise,
 }: Args): Promise<Metadata> {
+  const { isEnabled: draft } = await draftMode();
   const { slug = "home" } = await paramsPromise;
-  // Decode to support slugs with special characters
   const decodedSlug = decodeURIComponent(slug);
-  const page = await queryPageBySlug({
-    slug: decodedSlug,
-  });
+
+  const page = draft
+    ? await getDocument<Page>("pages", decodedSlug, { draft })
+    : await getCachedDocument<Page>("pages", decodedSlug);
 
   return generateMeta({ doc: page });
 }
