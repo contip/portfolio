@@ -72,3 +72,17 @@ output "s3_credentials_secret_arn" {
   description = "ARN of the S3 credentials secret in Secrets Manager"
   value       = module.media_storage.s3_credentials_secret_arn
 }
+
+################################################################################
+# Email Outputs
+################################################################################
+
+output "resend_domain_name" {
+  description = "Configured Resend sending domain"
+  value       = var.resend_domain_name
+}
+
+output "email_delivery_mode" {
+  description = "Configured Payload email delivery mode"
+  value       = var.email_delivery_mode
+}

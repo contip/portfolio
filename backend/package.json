@@ -23,6 +23,7 @@
   "dependencies": {
     "@ai-stack/payloadcms": "^3.2.25",
     "@payloadcms/db-postgres": "3.70.0",
+    "@payloadcms/email-resend": "3.70.0",
     "@payloadcms/next": "3.70.0",
     "@payloadcms/plugin-form-builder": "^3.70.0",
     "@payloadcms/plugin-nested-docs": "^3.70.0",
@@ -31,6 +32,8 @@
     "@payloadcms/richtext-lexical": "3.70.0",
     "@payloadcms/storage-s3": "^3.70.0",
     "@payloadcms/ui": "3.70.0",
+    "@react-email/components": "^1.0.8",
+    "@react-email/render": "^2.0.4",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",

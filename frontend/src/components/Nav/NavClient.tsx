@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -15,8 +16,10 @@ import MobileNav from "./MobileNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { LogoFull } from "@/components/Logo";
 
+const navLabelTypography = "text-lg font-semibold";
+
 const navLinkStyles = cn(
-  "relative inline-flex items-center justify-center px-6 py-3 text-xl font-semibold",
+  "relative inline-flex items-center justify-center px-6 py-3 !text-lg !font-semibold",
   "text-foreground/80 hover:text-foreground",
   "after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-0 after:-translate-x-1/2",
   "after:bg-primary after:transition-all after:duration-300",
@@ -25,7 +28,7 @@ const navLinkStyles = cn(
 );
 
 const navTriggerStyles = cn(
-  "relative inline-flex items-center justify-center gap-2 px-6 py-3 text-xl font-semibold",
+  "relative inline-flex items-center justify-center gap-2 px-6 py-3 !text-lg !font-semibold",
   "text-foreground/80 hover:text-foreground",
   "after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-0 after:-translate-x-1/2",
   "after:bg-primary after:transition-all after:duration-300",
@@ -83,16 +86,24 @@ function ListItem({
         <Link
           href={href}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            "group/item block select-none rounded-xl border border-transparent px-4 py-3 no-underline outline-none transition-all duration-200",
+            "hover:border-border/70 hover:bg-muted/45 focus:border-border/70 focus:bg-muted/45",
             className
           )}
         >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          {description && (
-            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-              {description}
-            </p>
-          )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className={cn(navLabelTypography, "leading-snug text-foreground")}>
+                {title}
+              </div>
+              {description && (
+                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                  {description}
+                </p>
+              )}
+            </div>
+            <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover/item:-translate-y-0.5 group-hover/item:translate-x-0.5 group-hover/item:text-foreground" />
+          </div>
         </Link>
       </NavigationMenuLink>
     </li>
@@ -109,21 +120,32 @@ function HeroCard({
   const href = hero.heroLink ? getLinkHref(hero.heroLink) : "#";
 
   return (
-    <li className="row-span-3">
-      <NavigationMenuLink asChild>
-        <Link
-          href={href}
-          className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-        >
-          <div className="mb-2 mt-4 text-lg font-medium">{hero.title}</div>
+    <NavigationMenuLink asChild>
+      <Link
+        href={href}
+        className="group relative flex h-full min-h-[19rem] w-full select-none flex-col overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-muted/65 via-card to-background p-6 no-underline outline-none transition-all duration-300 hover:border-primary/30 hover:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.85)] focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+      >
+        <span className="text-[0.62rem] uppercase tracking-[0.32em] text-muted-foreground">
+          Featured
+        </span>
+        <div className="mt-auto">
+          <div className={cn(navLabelTypography, "leading-tight text-foreground")}>
+            {hero.title}
+          </div>
           {hero.description && (
-            <p className="text-sm leading-tight text-muted-foreground">
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {hero.description}
             </p>
           )}
-        </Link>
-      </NavigationMenuLink>
-    </li>
+          {hero.heroLink?.label && (
+            <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.22em] text-foreground/80 transition-colors group-hover:text-foreground">
+              {hero.heroLink.label}
+              <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </span>
+          )}
+        </div>
+      </Link>
+    </NavigationMenuLink>
   );
 }
 
@@ -153,27 +175,36 @@ const NavClient = ({ data }: NavClientProps) => {
                       <NavigationMenuTrigger className={navTriggerStyles}>
                         {navItem.ddSettings?.title}
                       </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul
-                          className={cn(
-                            "grid gap-3 p-4",
-                            navItem.ddSettings?.enableHero && navItem.ddSettings?.hero
-                              ? "md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]"
-                              : "w-[400px] md:w-[500px] md:grid-cols-2 lg:w-[600px]"
-                          )}
-                        >
-                          {navItem.ddSettings?.enableHero && navItem.ddSettings?.hero && (
-                            <HeroCard hero={navItem.ddSettings.hero} />
-                          )}
-                          {navItem.ddSettings?.ddLinks?.map((linkItem) => (
-                            <ListItem
-                              key={linkItem.id}
-                              title={linkItem.link.label}
-                              description={linkItem.description}
-                              href={getLinkHref(linkItem.link)}
-                            />
-                          ))}
-                        </ul>
+                      <NavigationMenuContent className="p-0">
+                        {navItem.ddSettings?.enableHero &&
+                        navItem.ddSettings?.hero ? (
+                          <div className="grid w-[min(92vw,46rem)] gap-4 p-5 md:grid-cols-[minmax(14rem,0.9fr)_minmax(0,1fr)] md:p-6">
+                            <div>
+                              <HeroCard hero={navItem.ddSettings.hero} />
+                            </div>
+                            <ul className="grid content-start gap-2">
+                              {navItem.ddSettings?.ddLinks?.map((linkItem) => (
+                                <ListItem
+                                  key={linkItem.id}
+                                  title={linkItem.link.label}
+                                  description={linkItem.description}
+                                  href={getLinkHref(linkItem.link)}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        ) : (
+                          <ul className="grid w-[min(92vw,38rem)] gap-2 p-5 md:grid-cols-2 md:p-6">
+                            {navItem.ddSettings?.ddLinks?.map((linkItem) => (
+                              <ListItem
+                                key={linkItem.id}
+                                title={linkItem.link.label}
+                                description={linkItem.description}
+                                href={getLinkHref(linkItem.link)}
+                              />
+                            ))}
+                          </ul>
+                        )}
                       </NavigationMenuContent>
                     </>
                   )}

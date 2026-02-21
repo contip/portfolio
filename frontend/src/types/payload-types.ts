@@ -75,12 +75,14 @@ export interface Config {
     caseStudies: CaseStudy;
     categories: Category;
     icons: Icon;
+    'generated-emails': GeneratedEmail;
     lizards: Lizard;
     forms: Form;
     'form-submissions': FormSubmission;
     'plugin-ai-instructions': PluginAiInstruction;
     redirects: Redirect;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -99,12 +101,14 @@ export interface Config {
     caseStudies: CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
+    'generated-emails': GeneratedEmailsSelect<false> | GeneratedEmailsSelect<true>;
     lizards: LizardsSelect<false> | LizardsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     'plugin-ai-instructions': PluginAiInstructionsSelect<false> | PluginAiInstructionsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -116,17 +120,25 @@ export interface Config {
   globals: {
     footer: Footer;
     nav: Nav;
+    'email-config': EmailConfig;
   };
   globalsSelect: {
     footer: FooterSelect<false> | FooterSelect<true>;
     nav: NavSelect<false> | NavSelect<true>;
+    'email-config': EmailConfigSelect<false> | EmailConfigSelect<true>;
   };
   locale: null;
   user: User & {
     collection: 'users';
   };
   jobs: {
-    tasks: unknown;
+    tasks: {
+      sendGeneratedEmail: TaskSendGeneratedEmail;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -800,6 +812,15 @@ export interface Form {
   id: number;
   captcha?: boolean | null;
   honeypot?: boolean | null;
+  emailWorkflow?: {
+    enableAutomatedResponses?: boolean | null;
+    sendClientAcknowledgement?: boolean | null;
+    sendInternalAlert?: boolean | null;
+    includeSubmissionFieldDump?: boolean | null;
+    internalRecipientKey?: string | null;
+    clientTemplateKey?: string | null;
+    internalTemplateKey?: string | null;
+  };
   title: string;
   fields?:
     | (
@@ -1061,6 +1082,79 @@ export interface BlogHighlightBlock {
   blockType: 'blogHighlight';
 }
 /**
+ * Captured and/or queued outbound emails for preview, audit, and resend workflows.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "generated-emails".
+ */
+export interface GeneratedEmail {
+  id: number;
+  name: string;
+  recipientType: 'client' | 'internal';
+  status: 'captured' | 'queued' | 'delegated' | 'sent' | 'failed';
+  deliveryMode: 'jobs' | 'direct' | 'capture';
+  templateKey?: string | null;
+  internalRecipientKey?: string | null;
+  form?: (number | null) | Form;
+  formSubmission?: (number | null) | FormSubmission;
+  formTitle?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  company?: string | null;
+  serviceNeed?: string | null;
+  from: string;
+  replyTo?: string | null;
+  to: {
+    email: string;
+    id?: string | null;
+  }[];
+  cc?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  bcc?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  subject: string;
+  html: string;
+  submissionSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  providerMessageId?: string | null;
+  sentAt?: string | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "form-submissions".
+ */
+export interface FormSubmission {
+  id: number;
+  form: number | Form;
+  submissionData?:
+    | {
+        field: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "lizards".
  */
@@ -1087,23 +1181,6 @@ export interface Lizard {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "form-submissions".
- */
-export interface FormSubmission {
-  id: number;
-  form: number | Form;
-  submissionData?:
-    | {
-        field: string;
-        value: string;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1328,6 +1405,98 @@ export interface PayloadKv {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'sendGeneratedEmail';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'sendGeneratedEmail') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -1364,6 +1533,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'icons';
         value: number | Icon;
+      } | null)
+    | ({
+        relationTo: 'generated-emails';
+        value: number | GeneratedEmail;
       } | null)
     | ({
         relationTo: 'lizards';
@@ -1916,6 +2089,53 @@ export interface IconsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "generated-emails_select".
+ */
+export interface GeneratedEmailsSelect<T extends boolean = true> {
+  name?: T;
+  recipientType?: T;
+  status?: T;
+  deliveryMode?: T;
+  templateKey?: T;
+  internalRecipientKey?: T;
+  form?: T;
+  formSubmission?: T;
+  formTitle?: T;
+  contactName?: T;
+  contactEmail?: T;
+  company?: T;
+  serviceNeed?: T;
+  from?: T;
+  replyTo?: T;
+  to?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  cc?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  bcc?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  subject?: T;
+  html?: T;
+  submissionSnapshot?: T;
+  providerMessageId?: T;
+  sentAt?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "lizards_select".
  */
 export interface LizardsSelect<T extends boolean = true> {
@@ -1944,6 +2164,17 @@ export interface LizardsSelect<T extends boolean = true> {
 export interface FormsSelect<T extends boolean = true> {
   captcha?: T;
   honeypot?: T;
+  emailWorkflow?:
+    | T
+    | {
+        enableAutomatedResponses?: T;
+        sendClientAcknowledgement?: T;
+        sendInternalAlert?: T;
+        includeSubmissionFieldDump?: T;
+        internalRecipientKey?: T;
+        clientTemplateKey?: T;
+        internalTemplateKey?: T;
+      };
   title?: T;
   fields?:
     | T
@@ -2230,6 +2461,37 @@ export interface PayloadKvSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
@@ -2470,6 +2732,74 @@ export interface Nav {
   createdAt?: string | null;
 }
 /**
+ * Global sender identity, internal routing, and editable template catalog for consulting lead automation.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-config".
+ */
+export interface EmailConfig {
+  id: number;
+  fromName: string;
+  fromAddress: string;
+  defaultReplyTo?: string | null;
+  fallbackInternalEmail?: string | null;
+  /**
+   * Used when a form does not explicitly choose an internal recipient route.
+   */
+  defaultInternalRecipientKey?: string | null;
+  responseSLA?: string | null;
+  consultationURL?: string | null;
+  logoURL?: string | null;
+  /**
+   * Define reusable recipient routes by key (e.g. sales, support, partnerships). Forms reference these keys.
+   */
+  internalRecipients?:
+    | {
+        key: string;
+        label: string;
+        enabled?: boolean | null;
+        primaryEmail: string;
+        secondaryEmails?:
+          | {
+              email: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  defaultClientTemplateKey?: string | null;
+  defaultInternalTemplateKey?: string | null;
+  clientTemplates?:
+    | {
+        key: string;
+        label: string;
+        enabled?: boolean | null;
+        subject?: string | null;
+        heading?: string | null;
+        intro?: string | null;
+        ctaLabel?: string | null;
+        closing?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  internalTemplates?:
+    | {
+        key: string;
+        label: string;
+        enabled?: boolean | null;
+        subject?: string | null;
+        heading?: string | null;
+        intro?: string | null;
+        closing?: string | null;
+        includeFieldDump?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "footer_select".
  */
@@ -2570,6 +2900,80 @@ export interface NavSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-config_select".
+ */
+export interface EmailConfigSelect<T extends boolean = true> {
+  fromName?: T;
+  fromAddress?: T;
+  defaultReplyTo?: T;
+  fallbackInternalEmail?: T;
+  defaultInternalRecipientKey?: T;
+  responseSLA?: T;
+  consultationURL?: T;
+  logoURL?: T;
+  internalRecipients?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        enabled?: T;
+        primaryEmail?: T;
+        secondaryEmails?:
+          | T
+          | {
+              email?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  defaultClientTemplateKey?: T;
+  defaultInternalTemplateKey?: T;
+  clientTemplates?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        enabled?: T;
+        subject?: T;
+        heading?: T;
+        intro?: T;
+        ctaLabel?: T;
+        closing?: T;
+        id?: T;
+      };
+  internalTemplates?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        enabled?: T;
+        subject?: T;
+        heading?: T;
+        intro?: T;
+        closing?: T;
+        includeFieldDump?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendGeneratedEmail".
+ */
+export interface TaskSendGeneratedEmail {
+  input: {
+    generatedEmailID: number;
+  };
+  output: {
+    success: boolean;
+    message?: string | null;
+    providerMessageId?: string | null;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

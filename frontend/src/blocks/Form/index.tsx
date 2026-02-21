@@ -4,7 +4,10 @@ import RichText from "@/components/RichText";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { FormBlock as FormBlockType, Form as FormType } from "@/types/payload-types";
+import type {
+  FormBlock as FormBlockType,
+  Form as FormType,
+} from "@/types/payload-types";
 import { getClientSideURL } from "@/utilities/getURL";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
@@ -23,12 +26,7 @@ type FormBlockProps = FormBlockType & {
 type FormFieldRenderer = React.ComponentType<Record<string, unknown>>;
 
 export const FormBlock: React.FC<FormBlockProps> = (props) => {
-  const {
-    enableIntro,
-    form,
-    introContent,
-    fieldValues = [],
-  } = props;
+  const { enableIntro, form, introContent, fieldValues = [] } = props;
 
   const formFromProps =
     form && typeof form === "object" ? (form as FormType) : null;
@@ -46,8 +44,12 @@ export const FormBlock: React.FC<FormBlockProps> = (props) => {
 
   const initialValues = useMemo(
     () =>
-      buildInitialFormState(formFromProps?.fields, fieldValues, honeypot || undefined),
-    [formFromProps?.fields, fieldValues, honeypot]
+      buildInitialFormState(
+        formFromProps?.fields,
+        fieldValues,
+        honeypot || undefined,
+      ),
+    [formFromProps?.fields, fieldValues, honeypot],
   );
 
   const formMethods = useForm<FieldValues>({
@@ -77,7 +79,8 @@ export const FormBlock: React.FC<FormBlockProps> = (props) => {
 
         if (captcha && !token) {
           setError({
-            message: "Please verify that you are human by completing the captcha.",
+            message:
+              "Please verify that you are human by completing the captcha.",
             status: "400",
           });
           return;
@@ -100,26 +103,47 @@ export const FormBlock: React.FC<FormBlockProps> = (props) => {
         }, 1000);
 
         try {
-          const req = await fetch(`${getClientSideURL()}/api/form-submissions`, {
-            body: JSON.stringify({
-              form: formId,
-              submissionData: dataToSend,
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-            method: "POST",
-          });
+          const payloadAPIBaseURL =
+            process.env.NEXT_PUBLIC_PAYLOAD_API_URL ||
+            process.env.NEXT_PUBLIC_SERVER_URL ||
+            getClientSideURL();
 
-          const res = await req.json();
+          const req = await fetch(
+            `${payloadAPIBaseURL}/api/form-submissions`,
+            {
+              body: JSON.stringify({
+                form: formId,
+                submissionData: dataToSend,
+              }),
+              headers: {
+                "Content-Type": "application/json",
+              },
+              method: "POST",
+            },
+          );
+
+          let res: { errors?: Array<{ message?: string }>; message?: string; status?: string } =
+            {};
+
+          const contentType = req.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            res = await req.json();
+          } else {
+            const text = await req.text();
+            res = { message: text };
+          }
 
           clearTimeout(loadingTimerId);
 
           if (req.status >= 400) {
             setIsLoading(false);
             setError({
-              message: res.errors?.[0]?.message || "Internal Server Error",
-              status: res.status,
+              message:
+                res.errors?.[0]?.message ||
+                res.message ||
+                req.statusText ||
+                "Internal Server Error",
+              status: String(res.status || req.status),
             });
             return;
           }
@@ -134,14 +158,17 @@ export const FormBlock: React.FC<FormBlockProps> = (props) => {
           console.warn(err);
           setIsLoading(false);
           setError({
-            message: "Something went wrong.",
+            message:
+              err instanceof Error
+                ? err.message
+                : "Network request failed while submitting the form.",
           });
         }
       };
 
       void submitForm();
     },
-    [captcha, token, formId, confirmationType, redirect, router]
+    [captcha, token, formId, confirmationType, redirect, router],
   );
 
   if (!formFromProps) {
@@ -153,7 +180,7 @@ export const FormBlock: React.FC<FormBlockProps> = (props) => {
   }
 
   return (
-    <div className="container-art max-w-3xl">
+    <div className="container-art">
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} />
       )}

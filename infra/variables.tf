@@ -53,6 +53,98 @@ variable "app_stage" {
 }
 
 ################################################################################
+# Cloudflare Turnstile
+################################################################################
+
+variable "turnstile_site_key" {
+  description = "Cloudflare Turnstile site key used by frontend widget rendering"
+  type        = string
+  default     = ""
+}
+
+variable "turnstile_secret_key" {
+  description = "Cloudflare Turnstile secret key used by backend verification endpoint"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+################################################################################
+# Transactional Email (Resend)
+################################################################################
+
+variable "resend_api_key" {
+  description = "Resend API key used by Payload CMS email adapter"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "email_from_address" {
+  description = "Default from address for outbound transactional email"
+  type        = string
+  default     = ""
+}
+
+variable "email_from_name" {
+  description = "Default from name for outbound transactional email"
+  type        = string
+  default     = ""
+}
+
+variable "contact_inbox_email" {
+  description = "Primary internal inbox that receives enterprise lead notifications"
+  type        = string
+  default     = ""
+}
+
+variable "consultation_url" {
+  description = "Public booking/discovery URL used in client acknowledgement emails"
+  type        = string
+  default     = ""
+}
+
+variable "email_brand_logo_url" {
+  description = "Optional absolute URL for email logo shown in React-email templates"
+  type        = string
+  default     = ""
+}
+
+variable "email_response_sla" {
+  description = "Response-time promise text used in client acknowledgement emails"
+  type        = string
+  default     = "1 business day"
+}
+
+variable "email_delivery_mode" {
+  description = "Payload email dispatch mode: direct, jobs, or capture (no send)"
+  type        = string
+  default     = "jobs"
+
+  validation {
+    condition     = contains(["direct", "jobs", "capture"], var.email_delivery_mode)
+    error_message = "email_delivery_mode must be one of: direct, jobs, capture."
+  }
+}
+
+variable "resend_domain_name" {
+  description = "Verified sending domain in Resend (e.g. email.example.com)"
+  type        = string
+  default     = ""
+}
+
+variable "resend_dns_records" {
+  description = "DNS records required by Resend domain verification and deliverability setup"
+  type = list(object({
+    name    = string
+    type    = string
+    records = list(string)
+    ttl     = optional(number, 300)
+  }))
+  default = []
+}
+
+################################################################################
 # AI API Keys (for Payload CMS AI features)
 ################################################################################
 

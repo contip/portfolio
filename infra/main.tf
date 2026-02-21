@@ -84,6 +84,11 @@ locals {
     Project   = var.project
     ManagedBy = "terraform"
   }
+
+  resend_dns_records = {
+    for idx, record in var.resend_dns_records :
+    "${idx}-${lower(record.type)}-${replace(record.name, ".", "-")}" => record
+  }
 }
 
 ################################################################################
@@ -222,6 +227,26 @@ module "acm" {
 }
 
 ################################################################################
+# Resend DNS Records
+#
+# Configure these via terraform.tfvars after creating your sending domain in
+# Resend and copying the record values from the Resend dashboard.
+################################################################################
+
+resource "aws_route53_record" "resend" {
+  provider = aws.route53
+  for_each = local.resend_dns_records
+
+  zone_id = var.hosted_zone_id
+  name    = each.value.name
+  type    = upper(each.value.type)
+  ttl     = each.value.ttl
+  records = each.value.records
+
+  allow_overwrite = true
+}
+
+################################################################################
 # Media Storage (S3 + CloudFront)
 ################################################################################
 
@@ -287,14 +312,15 @@ module "opennext_frontend" {
   # Note: NEXT_PUBLIC_* vars are baked in at build time, not runtime.
   server_function = {
     additional_environment_variables = {
-      PAYLOAD_API_URL              = "https://api.${var.domain_name}"
-      NEXT_PUBLIC_PAYLOAD_API_URL  = "https://api.${var.domain_name}"
-      NEXT_PUBLIC_SERVER_URL       = "https://api.${var.domain_name}"
-      FRONTEND_URL                 = "https://${var.domain_name}"
-      NEXT_PUBLIC_FRONTEND_URL     = "https://${var.domain_name}"
-      REVALIDATE_SECRET            = module.secrets.revalidate_secret
-      PREVIEW_SECRET               = module.secrets.preview_secret
-      APP_STAGE                    = var.app_stage
+      PAYLOAD_API_URL                = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_PAYLOAD_API_URL    = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_SERVER_URL         = "https://api.${var.domain_name}"
+      FRONTEND_URL                   = "https://${var.domain_name}"
+      NEXT_PUBLIC_FRONTEND_URL       = "https://${var.domain_name}"
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY = var.turnstile_site_key
+      REVALIDATE_SECRET              = module.secrets.revalidate_secret
+      PREVIEW_SECRET                 = module.secrets.preview_secret
+      APP_STAGE                      = var.app_stage
     }
     additional_iam_policies = [
       {
@@ -365,15 +391,25 @@ module "opennext_backend" {
       NODE_ENV = "production"
 
       # Database configuration
-      DATABASE_URI   = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
-      PAYLOAD_SECRET = module.secrets.payload_secret
-      PAYLOAD_PUBLIC_SERVER_URL = "https://api.${var.domain_name}"
-      NEXT_PUBLIC_SERVER_URL    = "https://api.${var.domain_name}"
-      PUBLIC_URL                = "https://${var.domain_name}"
-      FRONTEND_URL              = "https://${var.domain_name}"
-      REVALIDATE_SECRET         = module.secrets.revalidate_secret
-      PREVIEW_SECRET            = module.secrets.preview_secret
-      APP_STAGE                 = var.app_stage
+      DATABASE_URI                    = "postgresql://${local.db_username}:${module.secrets.database_password}@${module.rds.address}:${local.db_port}/${local.db_name}?sslmode=no-verify"
+      PAYLOAD_SECRET                  = module.secrets.payload_secret
+      PAYLOAD_PUBLIC_SERVER_URL       = "https://api.${var.domain_name}"
+      NEXT_PUBLIC_SERVER_URL          = "https://api.${var.domain_name}"
+      PUBLIC_URL                      = "https://${var.domain_name}"
+      FRONTEND_URL                    = "https://${var.domain_name}"
+      REVALIDATE_SECRET               = module.secrets.revalidate_secret
+      PREVIEW_SECRET                  = module.secrets.preview_secret
+      APP_STAGE                       = var.app_stage
+      CLOUDFLARE_TURNSTILE_SECRET_KEY = var.turnstile_secret_key
+      RESEND_API_KEY                  = var.resend_api_key
+      EMAIL_FROM_ADDRESS              = var.email_from_address
+      EMAIL_FROM_NAME                 = var.email_from_name
+      CONTACT_INBOX_EMAIL             = var.contact_inbox_email
+      CONSULTATION_URL                = var.consultation_url
+      EMAIL_BRAND_LOGO_URL            = var.email_brand_logo_url
+      EMAIL_RESPONSE_SLA              = var.email_response_sla
+      EMAIL_DELIVERY_MODE             = var.email_delivery_mode
+      EMAIL_DOMAIN                    = var.resend_domain_name
 
       # S3 Storage configuration for Payload CMS
       S3_BUCKET            = module.media_storage.s3_bucket
@@ -383,9 +419,9 @@ module "opennext_backend" {
       CLOUDFRONT_DOMAIN    = module.media_storage.media_url
 
       # AI API Keys
-      OPENAI_API_KEY              = var.openai_api_key
+      OPENAI_API_KEY               = var.openai_api_key
       GOOGLE_GENERATIVE_AI_API_KEY = var.google_generative_ai_api_key
-      ANTHROPIC_API_KEY           = var.anthropic_api_key
+      ANTHROPIC_API_KEY            = var.anthropic_api_key
     }
     # VPC configuration so Lambda can reach RDS
     vpc = {

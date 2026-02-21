@@ -4,6 +4,8 @@ import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/
 import { Block, Field, Plugin } from 'payload'
 import verifyTurnstile from './hooks/verify-turnstile'
 import spamFilter from './hooks/spam-filter'
+import captureGeneratedEmails from './hooks/capture-generated-emails'
+import sendConsultingEmails from './hooks/send-consulting-emails'
 
 const textFields = (fields.text as Block).fields
 
@@ -30,9 +32,97 @@ const newFormFields: Field[] = [
     type: 'checkbox',
     defaultValue: true,
   },
+  {
+    name: 'emailWorkflow',
+    label: 'Email Workflow',
+    type: 'group',
+    fields: [
+      {
+        name: 'enableAutomatedResponses',
+        label: 'Enable Automated Responses',
+        type: 'checkbox',
+        defaultValue: true,
+      },
+      {
+        type: 'row',
+        fields: [
+          {
+            name: 'sendClientAcknowledgement',
+            label: 'Send Client Acknowledgement',
+            type: 'checkbox',
+            defaultValue: true,
+          },
+          {
+            name: 'sendInternalAlert',
+            label: 'Send Internal Alert',
+            type: 'checkbox',
+            defaultValue: true,
+          },
+          {
+            name: 'includeSubmissionFieldDump',
+            label: 'Include Submission Field Dump',
+            type: 'checkbox',
+            defaultValue: true,
+          },
+        ],
+      },
+      {
+        name: 'internalRecipientKey',
+        type: 'text',
+        admin: {
+          hidden: true,
+        },
+      },
+      {
+        name: 'internalRecipientKeyUi',
+        type: 'ui',
+        label: 'Internal Recipient Route',
+        admin: {
+          components: {
+            Field: '@/plugins/form-builder/components/EmailWorkflowSelect/InternalRecipientKeySelect',
+          },
+        },
+      },
+      {
+        name: 'clientTemplateKey',
+        type: 'text',
+        admin: {
+          hidden: true,
+        },
+      },
+      {
+        name: 'clientTemplateKeyUi',
+        type: 'ui',
+        label: 'Client Template',
+        admin: {
+          components: {
+            Field: '@/plugins/form-builder/components/EmailWorkflowSelect/ClientTemplateKeySelect',
+          },
+        },
+      },
+      {
+        name: 'internalTemplateKey',
+        type: 'text',
+        admin: {
+          hidden: true,
+        },
+      },
+      {
+        name: 'internalTemplateKeyUi',
+        type: 'ui',
+        label: 'Internal Template',
+        admin: {
+          components: {
+            Field: '@/plugins/form-builder/components/EmailWorkflowSelect/InternalTemplateKeySelect',
+          },
+        },
+      },
+    ],
+  },
 ]
 
 export const FormBuilderPlugin: Plugin = formBuilderPlugin({
+  beforeEmail: captureGeneratedEmails,
   fields: {
     payment: false,
     hidden: InputHidden,
@@ -40,6 +130,7 @@ export const FormBuilderPlugin: Plugin = formBuilderPlugin({
   formSubmissionOverrides: {
     hooks: {
       beforeChange: [verifyTurnstile, spamFilter],
+      afterChange: [sendConsultingEmails],
     },
   },
   formOverrides: {

@@ -82,11 +82,27 @@ jobs:
         working-directory: ./frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Resolve Turnstile site key from tfvars secret
+        id: turnstile
+        run: |
+          set -euo pipefail
+
+          TFVARS_CONTENT=$(printf '%s' "${{ secrets.TFVARS_CONTENT_DEV_B64 }}" | base64 -d | tr -d '\r')
+          TURNSTILE_SITE_KEY=$(printf '%s\n' "$TFVARS_CONTENT" | awk -F= '/^[[:space:]]*turnstile_site_key[[:space:]]*=/{print $2; exit}' | tr -d ' "')
+
+          if [ -z "$TURNSTILE_SITE_KEY" ]; then
+            echo "::warning::turnstile_site_key not found in TFVARS_CONTENT_DEV_B64"
+          fi
+
+          echo "::add-mask::$TURNSTILE_SITE_KEY"
+          echo "turnstile_site_key=$TURNSTILE_SITE_KEY" >> "$GITHUB_OUTPUT"
+
       - name: Build Next.js with OpenNext
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_PAYLOAD_API_URL: https://api.${{ secrets.DOMAIN_NAME }}
           NEXT_PUBLIC_FRONTEND_URL: https://${{ secrets.DOMAIN_NAME }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ steps.turnstile.outputs.turnstile_site_key }}
         run: |
           set -euo pipefail
 

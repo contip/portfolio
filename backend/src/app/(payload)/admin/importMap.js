@@ -35,7 +35,11 @@ import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea
 import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { default as default_035c8899d4e91984b3b63160b3ed5373 } from '@/components/CategorySelect'
+import { default as default_088a043c9dc62d54e28d9f88a36f889d } from '@/collections/GeneratedEmails/components/PreviewTab'
 import { SlugField as SlugField_3817bf644402e67bfe6577f60ef982de } from '@payloadcms/ui'
+import { default as default_5ad0ee371995f6b7a4712bd76c9a739a } from '@/plugins/form-builder/components/EmailWorkflowSelect/InternalRecipientKeySelect'
+import { default as default_94005036828e0117d5f7fdb70f879d0f } from '@/plugins/form-builder/components/EmailWorkflowSelect/ClientTemplateKeySelect'
+import { default as default_39fa8b0131448401f9065e3ba89655cb } from '@/plugins/form-builder/components/EmailWorkflowSelect/InternalTemplateKeySelect'
 import { SelectField as SelectField_c25bd927cd468b8e16d7bdb2cc282659 } from '@ai-stack/payloadcms/fields'
 import { PromptEditorField as PromptEditorField_c25bd927cd468b8e16d7bdb2cc282659 } from '@ai-stack/payloadcms/fields'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
@@ -80,7 +84,11 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaImageComponent": MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@/components/CategorySelect#default": default_035c8899d4e91984b3b63160b3ed5373,
+  "@/collections/GeneratedEmails/components/PreviewTab#default": default_088a043c9dc62d54e28d9f88a36f889d,
   "@payloadcms/ui#SlugField": SlugField_3817bf644402e67bfe6577f60ef982de,
+  "@/plugins/form-builder/components/EmailWorkflowSelect/InternalRecipientKeySelect#default": default_5ad0ee371995f6b7a4712bd76c9a739a,
+  "@/plugins/form-builder/components/EmailWorkflowSelect/ClientTemplateKeySelect#default": default_94005036828e0117d5f7fdb70f879d0f,
+  "@/plugins/form-builder/components/EmailWorkflowSelect/InternalTemplateKeySelect#default": default_39fa8b0131448401f9065e3ba89655cb,
   "@ai-stack/payloadcms/fields#SelectField": SelectField_c25bd927cd468b8e16d7bdb2cc282659,
   "@ai-stack/payloadcms/fields#PromptEditorField": PromptEditorField_c25bd927cd468b8e16d7bdb2cc282659,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,

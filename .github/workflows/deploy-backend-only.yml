@@ -105,6 +105,21 @@ jobs:
           tr -d '\r' < terraform.tfvars > tf.tmp && mv tf.tmp terraform.tfvars
           echo "terraform.tfvars created ($(wc -l < terraform.tfvars) lines)"
 
+      - name: Validate Turnstile secret key is present in tfvars
+        working-directory: ./infra
+        run: |
+          set -euo pipefail
+
+          TURNSTILE_SECRET_KEY=$(awk -F= '/^[[:space:]]*turnstile_secret_key[[:space:]]*=/{print $2; exit}' terraform.tfvars | tr -d ' "')
+
+          if [ -z "$TURNSTILE_SECRET_KEY" ]; then
+            echo "::error::turnstile_secret_key is missing or empty in TFVARS_CONTENT_DEV_B64"
+            exit 1
+          fi
+
+          echo "::add-mask::$TURNSTILE_SECRET_KEY"
+          echo "✓ turnstile_secret_key detected"
+
       - name: Terraform Init
         working-directory: ./infra
         run: terraform init -input=false
@@ -117,7 +132,8 @@ jobs:
           # Target only backend-related resources
           terraform apply -auto-approve -input=false \
             -var-file=terraform.tfvars \
-            -target=module.opennext_backend
+            -target=module.opennext_backend \
+            -target=aws_route53_record.resend
 
       - name: Get Terraform outputs
         id: outputs

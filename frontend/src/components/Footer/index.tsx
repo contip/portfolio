@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 import { getCachedGlobal } from "@/lib/payload";
 import type { Footer as FooterType } from "@/types/payload-types";
@@ -50,6 +51,18 @@ const renderIcon = (icon: NonNullable<FooterType["socials"]>[number]["icon"]) =>
   );
 };
 
+const exploreLinkStyles =
+  "group inline-flex items-center gap-2 text-sm text-foreground/80 transition-colors hover:text-foreground";
+
+const ExploreLinkLabel = ({ label }: { label: string }) => (
+  <>
+    <span className="relative pb-0.5 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 group-hover:after:w-full">
+      {label}
+    </span>
+    <ArrowUpRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+  </>
+);
+
 const Footer = async () => {
   let footer: FooterType | null = null;
 
@@ -83,34 +96,36 @@ const Footer = async () => {
 
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Explore</p>
-            <ul className="mt-6 space-y-3 text-sm">
+            <ul className="mt-6 space-y-2">
               {footerItems.length > 0 ? (
                 footerItems.map((item) => (
                   <li key={item.id}>
                     <CMSLink
                       link={{
                         ...item.link,
-                        appearance: item.link.appearance ?? "text",
+                        appearance: "text",
                       }}
-                      className="inline-flex items-center gap-2 text-foreground transition-colors hover:text-primary"
-                    />
+                      className={exploreLinkStyles}
+                    >
+                      <ExploreLinkLabel label={item.link.label} />
+                    </CMSLink>
                   </li>
                 ))
               ) : (
                 <>
                   <li>
-                    <Link href="/services" className="transition-colors hover:text-primary">
-                      Services
+                    <Link href="/services" className={exploreLinkStyles}>
+                      <ExploreLinkLabel label="Services" />
                     </Link>
                   </li>
                   <li>
-                    <Link href="/case-studies" className="transition-colors hover:text-primary">
-                      Case Studies
+                    <Link href="/case-studies" className={exploreLinkStyles}>
+                      <ExploreLinkLabel label="Case Studies" />
                     </Link>
                   </li>
                   <li>
-                    <Link href="/blog" className="transition-colors hover:text-primary">
-                      Blog
+                    <Link href="/blog" className={exploreLinkStyles}>
+                      <ExploreLinkLabel label="Blog" />
                     </Link>
                   </li>
                 </>
